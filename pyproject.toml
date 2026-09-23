@@ -1,0 +1,54 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "temporal-hoi-video-text-matching"
+version = "0.1.0"
+description = "Research prototype for temporal human-object video-text matching and rule-based violation detection"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "torch>=2.6,<3",
+    "torchvision>=0.21,<1",
+    "open-clip-torch>=2.30,<4",
+    "numpy>=1.26,<3",
+    "pandas>=2.2,<4",
+    "pillow>=10.4,<13",
+    "opencv-python-headless>=4.10,<5",
+    "pyyaml>=6,<7",
+    "pydantic>=2.9,<3",
+    "scikit-learn>=1.5,<2",
+    "matplotlib>=3.9,<4",
+    "tqdm>=4.66,<5",
+    "gradio>=5,<7",
+]
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "ruff>=0.11,<1"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/temporal_hoi"]
+
+[tool.uv]
+cache-dir = ".cache/uv"
+
+# CPU-first development. Select a CUDA index only after choosing the rented GPU.
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu", marker = "sys_platform != 'darwin'" }
+torchvision = { index = "pytorch-cpu", marker = "sys_platform != 'darwin'" }
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
