@@ -1,0 +1,84 @@
+# Python environments and generated files
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+build/
+dist/
+.cache/
+.ipynb_checkpoints/
+
+# Local configuration, secrets and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+kaggle.json
+credentials.json
+client_secret*.json
+service-account*.json
+*.token
+token.json
+.netrc
+
+# Large datasets, model weights, logs and run artifacts
+data/raw/
+data/processed/
+data/features/
+checkpoints/
+weights/
+outputs/
+runs/
+wandb/
+mlruns/
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.bin
+*.onnx
+*.pkl
+*.pickle
+*.npy
+*.npz
+*.log
+events.out.tfevents.*
+
+# Large media & archive files (prevents breaking GitHub 100MB limit)
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+
+# Editor/OS/Office temporary files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
+~$*
+*.tmp
+*.swp
+*.swo
+
+# Reports and personal tracking (stored on Google Drive)
+docs/report/
+docs/Ke_hoach_do_an_10_tuan.xlsx
+
+# Keep plans, manifests and small reviewed configs versioned.
