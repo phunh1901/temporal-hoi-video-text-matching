@@ -1,5 +1,7 @@
 # Temporal HOI Video–Text Matching
 
+> **Kế hoạch hiện hành — 28/09/2026:** xem [kế hoạch 10 tuần](plan.md) và [bảng tiến độ đã cập nhật](outputs/Ke_hoach_do_an_10_tuan.xlsx). Hai hướng hiện tại là phát hiện vi phạm không train/fine-tune riêng theo hành vi và video–text matching bằng mô hình có sẵn. Mỗi tuần một báo cáo tổng hợp, nộp thứ Sáu. Các sơ đồ temporal adapter/alignment có học ở phần dưới là thiết kế trước khi đổi phạm vi, không phải yêu cầu triển khai của lịch mới; hướng dẫn cài môi trường vẫn dùng được.
+
 > **Hệ thống nhận biết tương tác người–vật theo thời gian và so khớp video–văn bản phục vụ phát hiện vi phạm quy định.**
 
 [![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](https://www.python.org/)

@@ -1,5 +1,7 @@
 # PRD Đồ án Temporal HOI Video–Text Matching
 
+> **Tài liệu thiết kế phiên bản cũ.** Từ 28/09/2026, phạm vi và tiêu chí thực hiện hiện hành nằm trong [plan.md](../plan.md) và [Excel tiến độ đã cập nhật](../outputs/Ke_hoach_do_an_10_tuan.xlsx): phát hiện vi phạm không train/fine-tune riêng theo hành vi; nghiên cứu video–text matching; một báo cáo tổng hợp mỗi thứ Sáu. Các yêu cầu học adapter/projection, bộ dữ liệu HOI và chỉ tiêu cải thiện trong PRD này không còn là cam kết bắt buộc của kế hoạch mới. Chỉ tham khảo các phần còn phù hợp, đối chiếu với kế hoạch hiện hành.
+
 **Phiên bản:** 0.1 — đề xuất phạm vi triển khai, ngày 23/09/2026.  
 **Người thực hiện:** Ngô Hoàng Phú.  
 **Thời gian đã xác nhận:** 14/09–22/11/2026, 20 giờ/tuần; có thể thuê GPU.  

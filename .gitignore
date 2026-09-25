@@ -36,7 +36,10 @@ data/processed/
 data/features/
 checkpoints/
 weights/
-outputs/
+outputs/*
+!outputs/**/
+!outputs/**/*.json
+outputs/**/~$*
 runs/
 wandb/
 mlruns/
@@ -78,7 +81,7 @@ desktop.ini
 *.swo
 
 # Reports and personal tracking (stored on Google Drive)
-docs/report/
-docs/Ke_hoach_do_an_10_tuan.xlsx
-
+docs/reports/
+plan.md
+*Ke_hoach_do_an_10_tuan*
 # Keep plans, manifests and small reviewed configs versioned.
