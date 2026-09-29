@@ -1,0 +1,30 @@
+{
+  "python": "3.12.10",
+  "platform": "Windows",
+  "packages": {
+    "torch": "2.14.0+cpu",
+    "torchvision": "0.29.0+cpu",
+    "open-clip-torch": "3.3.0",
+    "opencv-python-headless": "4.14.0.94",
+    "numpy": "2.5.3",
+    "pandas": "3.0.6",
+    "pillow": "12.3.0",
+    "pyyaml": "6.0.3",
+    "pydantic": "2.13.5",
+    "scikit-learn": "1.9.1",
+    "matplotlib": "3.11.2",
+    "tqdm": "4.70.1",
+    "gradio": "6.28.0",
+    "temporal-hoi-video-text-matching": "0.1.0"
+  },
+  "cuda_available": false,
+  "torch_cuda_build": null,
+  "checks": [
+    "imports",
+    "autograd",
+    "torchvision_nms",
+    "clip_tokenizer",
+    "video_roundtrip"
+  ],
+  "pretrained_weights_downloaded": false
+}
