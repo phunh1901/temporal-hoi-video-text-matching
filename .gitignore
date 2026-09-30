@@ -39,6 +39,7 @@ weights/
 outputs/*
 !outputs/**/
 !outputs/**/*.json
+outputs/**/previews/
 outputs/**/~$*
 runs/
 wandb/
@@ -82,6 +83,9 @@ desktop.ini
 
 # Reports and personal tracking (stored on Google Drive)
 docs/reports/
+reports/
 plan.md
 *Ke_hoach_do_an_10_tuan*
 # Keep plans, manifests and small reviewed configs versioned.
+# AI agent instructions and rules
+.agents/

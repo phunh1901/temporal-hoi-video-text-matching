@@ -1,7 +1,7 @@
 {
   "status": "SUCCESS",
   "task_id": "W01-03",
-  "timestamp_iso": "2026-09-30T00:24:56+0700",
+  "timestamp_iso": "2026-09-30T09:24:49+0700",
   "hardware": {
     "device": "cpu",
     "cuda_available": false,
@@ -52,10 +52,10 @@
     ]
   },
   "performance": {
-    "load_time_seconds": 2.903,
-    "inference_time_seconds": 0.596,
-    "total_time_seconds": 3.739,
-    "frames_per_second_infer": 13.41
+    "load_time_seconds": 2.436,
+    "inference_time_seconds": 0.488,
+    "total_time_seconds": 3.183,
+    "frames_per_second_infer": 16.4
   },
   "verification_checks": {
     "video_opened": true,
@@ -88,10 +88,10 @@
     },
     {
       "id": "T4_RULE_EXT",
-      "category": "soccer_rule",
-      "text": "people playing soccer and kicking a ball in the yard",
-      "description": "Hành vi mở rộng: Đá bóng ở sân",
-      "cosine_similarity": 0.050345
+      "category": "bicycle_rule",
+      "text": "a person riding a bicycle on the pedestrian walkway",
+      "description": "Hành vi mở rộng: Đi xe đạp trong khu vực người đi bộ cấm xe",
+      "cosine_similarity": 0.017952
     }
   ]
 }

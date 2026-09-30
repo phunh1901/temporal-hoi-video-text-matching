@@ -1,0 +1,14 @@
+{
+  "profile": "w02_lightweight_pilot_v1",
+  "date": "2026-09-30",
+  "purpose": "technical_pilot_only",
+  "files": {
+    "clips.csv": "17f3498b2c53b7e62d3728fd3c0301d8246d272ec2561e606b30e3b9f9da5c94",
+    "label_reviews.csv": "4d1e166f31186f8da63dc4b4e235ef3b22ca1e5ee7b683a041f9d4cd231c3d96",
+    "normal_intervals.csv": "30edf3ceb0959b630406c4288f7467e5c3e3e3a9564da8f108e15f995bccd905",
+    "relevance.csv": "cd4f9784ee5cbe6107f3a8daed4ea9320cbc721543f326000313e254af92ab92",
+    "sources.csv": "4c841f4efa08fdfa5f8957d1a13bba9d7c804ed528fa3795ee9eb50aef4984b9",
+    "splits.csv": "072bd4e67a6e9c00079ba8351530bc2c2409a482a9729f5a2ee3acfbb7518955",
+    "texts.csv": "9830b84b5a0e008921b6a8c07e8781d719f8dd43f2f557ed483c6cb647556148"
+  }
+}

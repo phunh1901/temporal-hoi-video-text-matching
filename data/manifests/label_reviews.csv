@@ -1,0 +1,9 @@
+clip_id,reviewer,reviewed_at,evidence,method,correction,human_reviewed
+parking_lot_01,Codex_visual_review_not_human,2026-09-30,outputs/w02/review/apartment_parking.jpg,source contact sheet; scene/action labels only,Nhiều ô tô đỗ theo hàng; có xe di chuyển trong bãi. Không đủ 30 giây.,false
+parking_lot_02,Codex_visual_review_not_human,2026-09-30,outputs/w02/review/apartment_parking.jpg,source contact sheet; scene/action labels only,Xe đỗ và xe di chuyển cùng xuất hiện; nhãn vi phạm cũ bị rút lại.,false
+highway_traffic_01,Codex_visual_review_not_human,2026-09-30,outputs/w02/review/trash_dumping.jpg,source contact sheet; scene/action labels only,Xe chạy trên cao tốc; không có bằng chứng người đổ rác. Tên tệp không phải nhãn.,false
+indoor_walk_01,Codex_visual_review_not_human,2026-09-30,outputs/w02/review/normal_surveillance.jpg,source contact sheet; scene/action labels only,"Người đi qua phòng sàn gỗ, không phải sân chung cư.",false
+indoor_walk_02,Codex_visual_review_not_human,2026-09-30,outputs/w02/review/normal_surveillance.jpg,source contact sheet; scene/action labels only,"Người đi qua phòng, có lúc không có người trong hình.",false
+highway_stop_01,Codex_visual_review_not_human,2026-09-30,outputs/w02/review/parking_violation.jpg,source contact sheet; scene/action labels only,Xe trên đường và xe cạnh vùng kẻ chéo; không đủ 30 giây xác nhận vi phạm.,false
+cycling_demo_01,Codex_visual_review_not_human,2026-09-30,outputs/w02/review/bicycle_pedestrian.jpg,source contact sheet; scene/action labels only,Người đi xe đạp qua bãi ngoài trời. Không xác nhận đây là vùng cấm.,false
+walking_demo_01,Codex_visual_review_not_human,2026-09-30,outputs/w02/review/bicycle_pedestrian.jpg,source contact sheet; scene/action labels only,Người đi bộ qua bãi ngoài trời; thay khoảng cũ 33–52 có cả xe đạp.,false

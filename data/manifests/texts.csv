@@ -1,0 +1,11 @@
+text_id,behavior_id,prompt_text,prompt_type,description
+lot_1,lot,cars are parked in rows in an outdoor parking lot,candidate,Observed action/scene; no rule semantics
+lot_2,lot,many cars occupy marked parking spaces,candidate,Observed action/scene; no rule semantics
+road_1,road,vehicles travel along a multilane highway,candidate,Observed action/scene; no rule semantics
+road_2,road,cars and trucks drive on a divided road,candidate,Observed action/scene; no rule semantics
+room_1,room,people walk through a room with a wooden floor,candidate,Observed action/scene; no rule semantics
+room_2,room,pedestrians pass through an indoor room,candidate,Observed action/scene; no rule semantics
+cycle_1,cycle,a person rides a bicycle across an outdoor paved area,candidate,Observed action/scene; no rule semantics
+cycle_2,cycle,someone cycles through an outdoor parking area,candidate,Observed action/scene; no rule semantics
+walk_1,walk,a person walks across an outdoor paved area,candidate,Observed action/scene; no rule semantics
+walk_2,walk,someone crosses a parking area on foot,candidate,Observed action/scene; no rule semantics

@@ -1,0 +1,23 @@
+{
+  "profile": "w02_lightweight_pilot_v1",
+  "authorized_change": "2026-09-30: user requested small local dataset; remove 80-clip requirement",
+  "scope": "technical_pilot_not_final_benchmark",
+  "expected_clips": 8,
+  "expected_dev_clips": 6,
+  "expected_extension_clips": 2,
+  "max_raw_bytes": 52428800,
+  "num_frames": 8,
+  "max_frame_side": 320,
+  "window_size_s": 4,
+  "stride_s": 1,
+  "batch_size": 1,
+  "num_workers": 0,
+  "min_positive_texts": 2,
+  "min_negative_texts": 3,
+  "review_fraction": 1.0,
+  "independent_test_available": false,
+  "normal_hours_estimate_enabled": false,
+  "parking_min_duration_s": 30,
+  "littering_after_departure_s": 10,
+  "cycling_min_duration_s": 5
+}

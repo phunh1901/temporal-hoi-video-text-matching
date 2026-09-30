@@ -1,0 +1,42 @@
+[
+  {
+    "path": "data\\raw\\apartment_parking.mp4",
+    "bytes": 10607736,
+    "sha256": "f2d804e9b2e8ff7e0ae9776068a9cbc8126b6bce2e09ef6f56d3ad9c8fe84069",
+    "fps": 24.0,
+    "frames": 679,
+    "duration_s": 28.291666666666668
+  },
+  {
+    "path": "data\\raw\\bicycle_pedestrian.mp4",
+    "bytes": 6031199,
+    "sha256": "452b11b7e0efbd019f1d9570d0c790e90416ad4ad29eec6003872d08443140ef",
+    "fps": 12.0,
+    "frames": 647,
+    "duration_s": 53.916666666666664
+  },
+  {
+    "path": "data\\raw\\normal_surveillance.mp4",
+    "bytes": 5482579,
+    "sha256": "18ffe8672d741e3e29c9d891d22c59d453720b086c25b35c88b393d55f92f693",
+    "fps": 12.0,
+    "frames": 596,
+    "duration_s": 49.666666666666664
+  },
+  {
+    "path": "data\\raw\\parking_violation.mp4",
+    "bytes": 927127,
+    "sha256": "ec1dd32319052db8c3dc0fc2802fd93d74c03ce77ab8eab2901e03cbf8adad80",
+    "fps": 24.0,
+    "frames": 339,
+    "duration_s": 14.125
+  },
+  {
+    "path": "data\\raw\\trash_dumping.mp4",
+    "bytes": 683501,
+    "sha256": "f79ac51302228c6e82c04777f868dc63b512bf0c8b173fb28de061a0ec68e803",
+    "fps": 24.0,
+    "frames": 291,
+    "duration_s": 12.125
+  }
+]

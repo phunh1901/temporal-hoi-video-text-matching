@@ -16,7 +16,6 @@ import json
 import math
 import os
 import platform
-import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -24,8 +23,8 @@ from typing import Any
 import cv2
 import numpy as np
 import open_clip
-from PIL import Image
 import torch
+from PIL import Image
 
 DEFAULT_VIDEO_PATH = "data/sample/smoke_sample.mp4"
 DEFAULT_MODEL_NAME = "ViT-B-32"
@@ -52,14 +51,16 @@ PROMPT_CANDIDATES = [
     },
     {
         "id": "T4_RULE_EXT",
-        "category": "soccer_rule",
-        "text": "people playing soccer and kicking a ball in the yard",
-        "description": "Hành vi mở rộng: Đá bóng ở sân",
+        "category": "bicycle_rule",
+        "text": "a person riding a bicycle on the pedestrian walkway",
+        "description": "Hành vi mở rộng: Đi xe đạp trong khu vực người đi bộ cấm xe",
     },
 ]
 
 
-def extract_uniform_frames(video_path: str, num_frames: int = 8) -> tuple[list[Image.Image], dict[str, Any]]:
+def extract_uniform_frames(
+    video_path: str, num_frames: int = 8
+) -> tuple[list[Image.Image], dict[str, Any]]:
     """Uniformly sample `num_frames` from the video and return PIL images with metadata."""
     if not os.path.exists(video_path):
         raise FileNotFoundError(f"Video file not found at: {video_path}")
@@ -125,7 +126,9 @@ def run_smoke_test(
     print("TEMPORAL HOI - OPENCLIP VIDEO-TEXT MATCHING SMOKE TEST (W01-03)")
     print("=" * 70)
     print(f"Device: {device.upper()}")
-    print(f"Platform: {platform.system()} {platform.release()} (Python {platform.python_version()})")
+    print(
+        f"Platform: {platform.system()} {platform.release()} (Python {platform.python_version()})"
+    )
     print(f"Model: {model_name} | Pretrained Checkpoint: {pretrained}")
     print(f"Video target: {video_path}")
     print("-" * 70)
@@ -140,6 +143,7 @@ def run_smoke_test(
     )
     tokenizer = open_clip.get_tokenizer(model_name)
     model.eval()  # Strictly inference mode, no dropout, frozen weights
+    model.requires_grad_(False)
     load_time_s = time.perf_counter() - t_load_start
     print(f"      Model loaded successfully in {load_time_s:.2f}s")
 
@@ -154,7 +158,9 @@ def run_smoke_test(
     # 3. Encode image frames and compute video embedding
     print("[3/5] Encoding image frames and computing mean-pooled video embedding...")
     t_infer_start = time.perf_counter()
-    image_tensors = torch.stack([preprocess(f) for f in frames]).to(device)  # shape: [8, 3, 224, 224]
+    image_tensors = torch.stack([preprocess(f) for f in frames]).to(
+        device
+    )  # shape: [8, 3, 224, 224]
 
     with torch.no_grad():
         frame_features = model.encode_image(image_tensors)  # shape: [8, D]
@@ -204,7 +210,7 @@ def run_smoke_test(
     print("-" * 70)
     results_list = []
     for cand, score in zip(PROMPT_CANDIDATES, similarities):
-        print(f"{cand['id']:<12} | {score:+.6f}      | {cand['category']:<15} | \"{cand['text']}\"")
+        print(f'{cand["id"]:<12} | {score:+.6f}      | {cand["category"]:<15} | "{cand["text"]}"')
         results_list.append(
             {
                 "id": cand["id"],
@@ -226,7 +232,9 @@ def run_smoke_test(
         "hardware": {
             "device": device,
             "cuda_available": torch.cuda.is_available(),
-            "cuda_device_name": torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
+            "cuda_device_name": torch.cuda.get_device_name(0)
+            if torch.cuda.is_available()
+            else None,
             "cpu_architecture": platform.machine(),
             "processor": platform.processor(),
             "platform": platform.system(),
@@ -278,7 +286,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="OpenCLIP Video-Text Matching Smoke Test")
     parser.add_argument("--video", type=str, default=DEFAULT_VIDEO_PATH, help="Path to video file")
     parser.add_argument("--model", type=str, default=DEFAULT_MODEL_NAME, help="Model architecture")
-    parser.add_argument("--pretrained", type=str, default=DEFAULT_PRETRAINED, help="Pretrained checkpoint")
+    parser.add_argument(
+        "--pretrained", type=str, default=DEFAULT_PRETRAINED, help="Pretrained checkpoint"
+    )
     parser.add_argument("--output-dir", type=str, default="outputs/w01", help="Output directory")
     args = parser.parse_args()
 

@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-09-30T13:40:08.5079227+07:00",
+  "profile": "w02_lightweight_pilot_v1",
+  "pytest_exit_code": 0,
+  "pytest_output": ".....................                                                    [100%]\n21 passed in 1.96s",
+  "ruff_exit_code": 0,
+  "ruff_output": "All checks passed!",
+  "data_audit_exit_code": 0,
+  "data_audit_expected": "PASS_TECHNICAL_PILOT; research readiness is separate"
+}
