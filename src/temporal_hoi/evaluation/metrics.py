@@ -103,31 +103,90 @@ def compute_event_metrics(
 
 def _indices(indices, size):
     values = set(indices)
-    if any(not isinstance(i, (int, np.integer)) or i < 0 or i >= size for i in values):
+    if any(
+        isinstance(i, (bool, np.bool_))
+        or not isinstance(i, (int, np.integer))
+        or i < 0
+        or i >= size
+        for i in values
+    ):
         raise ValueError("Candidate index out of range")
     return sorted(values)
 
 
-def compute_recall_at_k(similarity_matrix, ground_truth_indices, k_list=None):
-    """Multi-positive recall; unlabeled rows excluded, score ties use column order."""
-    ks = [1, 3, 5] if k_list is None else k_list
+def compute_retrieval_metrics(similarity_matrix, ground_truth_indices, k_list=None):
+    """Rank the first positive (1-based); report R@K, MRR, MedR and coverage.
+
+    Rows are queries, columns are candidates. Each scored query must have its
+    complete positive set for this candidate pool. None or an empty set excludes
+    the query, rather than labeling it negative. Partially annotated queries
+    should be passed as None until their positive set is known. Scores must be
+    finite; ties use the original candidate order, which callers must preserve.
+    K larger than the candidate pool uses the full pool. Undefined metrics are
+    None. Sorting one row at a time avoids a second full ranking matrix.
+    """
+    ks = [1, 5, 10] if k_list is None else list(k_list)
     sim = np.asarray(similarity_matrix, dtype=float)
     if sim.ndim != 2 or not np.isfinite(sim).all():
         raise ValueError("Scores must be a finite 2D matrix")
     if len(ground_truth_indices) != len(sim):
         raise ValueError("One relevance annotation is required per query")
-    if any(not isinstance(k, int) or k <= 0 for k in ks):
-        raise ValueError("K must be a positive integer")
-    positives = [_indices(gt, sim.shape[1]) for gt in ground_truth_indices]
-    valid = [i for i, gt in enumerate(positives) if gt]
-    ranks = np.argsort(-sim, axis=1, kind="stable")
-    return {
-        f"R@{k}": (
-            sum(bool(set(ranks[i, :k]) & set(positives[i])) for i in valid) / len(valid)
-            if valid
-            else None
-        )
+    if any(
+        isinstance(k, (bool, np.bool_)) or not isinstance(k, (int, np.integer)) or k <= 0
         for k in ks
+    ):
+        raise ValueError("K must be a positive integer")
+    positives = [
+        [] if gt is None else _indices(gt, sim.shape[1]) for gt in ground_truth_indices
+    ]
+    first_ranks = []
+    for scores, gt in zip(sim, positives):
+        if not gt:
+            first_ranks.append(None)
+            continue
+        order = np.argsort(-scores, kind="stable")
+        first_ranks.append(int(np.flatnonzero(np.isin(order, gt))[0]) + 1)
+    valid_ranks = np.asarray([rank for rank in first_ranks if rank is not None], dtype=float)
+    count = len(valid_ranks)
+    return {
+        **{f"R@{k}": float(np.mean(valid_ranks <= k)) if count else None for k in ks},
+        "MRR": float(np.mean(1.0 / valid_ranks)) if count else None,
+        "MedR": float(np.median(valid_ranks)) if count else None,
+        "num_queries": sim.shape[0],
+        "num_candidates": sim.shape[1],
+        "num_evaluated_queries": count,
+        "num_excluded_queries": sim.shape[0] - count,
+        "first_positive_ranks": first_ranks,
+        "tie_breaking": "candidate_order",
+    }
+
+
+def compute_recall_at_k(similarity_matrix, ground_truth_indices, k_list=None):
+    """Compatibility API retaining the pilot defaults and recall-only output."""
+    ks = [1, 3, 5] if k_list is None else list(k_list)
+    result = compute_retrieval_metrics(similarity_matrix, ground_truth_indices, ks)
+    return {f"R@{k}": result[f"R@{k}"] for k in ks}
+
+
+def compute_bidirectional_retrieval(
+    video_text_similarity,
+    video_to_text_positives,
+    text_to_video_positives,
+    k_list=None,
+):
+    """Evaluate a [videos, texts] matrix in both directions.
+
+    Supply positive mappings explicitly for each direction: do not infer negative
+    or fully annotated reverse queries from an incomplete forward annotation.
+    A reverse mapping has one entry per text; its indices refer to video rows.
+    """
+    sim = np.asarray(video_text_similarity, dtype=float)
+    if sim.ndim != 2:
+        raise ValueError("Scores must be a finite 2D matrix")
+    ks = None if k_list is None else list(k_list)
+    return {
+        "video_to_text": compute_retrieval_metrics(sim, video_to_text_positives, ks),
+        "text_to_video": compute_retrieval_metrics(sim.T, text_to_video_positives, ks),
     }
 
 

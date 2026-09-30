@@ -1,179 +1,180 @@
-# Product Requirements Document (PRD)
-# Temporal HOI Video–Text Matching
+# PRD — Temporal HOI Video–Text Matching
 
-**Tên đề tài:** Nghiên cứu mô hình hóa tương tác người–vật thể theo thời gian (Spatio-Temporal HOI) và so khớp video–văn bản (Video–Text Matching) phục vụ phát hiện vi phạm quy định có căn cứ bằng chứng.  
-**Người thực hiện:** Ngô Hoàng Phú  
-**Trạng thái tài liệu:** Tài liệu đặc tả yêu cầu kỹ thuật và phân tích đề tài nghiên cứu (PRD).
+**Người thực hiện:** Ngô Hoàng Phú
+**Phiên bản phạm vi:** 30/09/2026, đối soát theo yêu cầu hai module và hai giai đoạn nghiên cứu.
+**Vai trò:** Đặc tả yêu cầu và giao thức mục tiêu. [README](../README.md) mô tả khả năng hiện có; [Plan](../plan.md) phân bổ việc và bằng chứng. Yêu cầu trong PRD không có nghĩa đã triển khai.
 
----
+## 1. Mục tiêu và câu hỏi nghiên cứu
 
-## 1. Tổng quan Đề tài & Bối cảnh Khoa học (Research Context)
+**M1 — Zero-shot / Open-vocabulary Human-Object Interaction Detection:** phát hiện cặp người–vật và tương tác có thể được mô tả bằng văn bản, dùng một tập HOI nền tảng, không xây bộ dữ liệu và huấn luyện mô hình riêng cho mỗi hành vi.
 
-### 1.1. Bối cảnh bài toán
-Trong các hệ thống giám sát an ninh (CCTV) tại khu dân cư, chung cư và đô thị (khuôn viên, bãi đỗ xe, điểm tập kết rác, đường nội bộ), nhu cầu phát hiện các hành vi vi phạm quy định an toàn ngày càng trở nên cấp thiết. Tuy nhiên, các giải pháp thị giác máy tính truyền thống chủ yếu dựa trên bài toán **nhận dạng hành vi tập đóng (*closed-set action recognition*)**. 
+**M2 — Video–Text Cross-modal Alignment / Retrieval:** học ánh xạ video và văn bản vào một **Shared Semantic Embedding Space**, dùng similarity để xếp hạng video/caption.
 
-Cách tiếp cận này bộc lộ những hạn chế nghiêm trọng:
-- **Kém linh hoạt:** Mỗi khi có một quy định mới phát sinh (ví dụ: cấm dắt xe đạp qua sân chơi trẻ em, cấm đỗ xe sai vị trí, cấm để rác ngoài giờ quy định), hệ thống đòi hỏi phải định nghĩa lại lớp nhãn, thu thập dữ liệu chuyên biệt và huấn luyện lại toàn bộ mô hình từ đầu.
-- **Thiếu tương tác Người–Vật thể theo thời gian:** Phần lớn mô hình chỉ phân loại hành động đơn lẻ hoặc nhận diện đối tượng tĩnh, không nắm bắt được mối quan hệ động (quỹ đạo tương đối, vận tốc, biến thiên vị trí) giữa Người và Vật qua chuỗi thời gian.
-- **Nhầm lẫn giữa Hành vi và Phán quyết Vi phạm:** Một hành vi (ví dụ: dừng xe, cầm đồ vật) bản thân nó không phải là vi phạm; hành vi đó chỉ trở thành vi phạm khi diễn ra tại khu vực cấm (vùng không gian) và kéo dài vượt quá ngưỡng thời gian cho phép.
+- **RQ1:** Trên cùng benchmark và giao thức lớp seen/unseen, mô hình phát hiện HOI tổng quát hóa đến tương tác chưa dùng làm nhãn huấn luyện đến đâu? Sai số nằm ở định vị cặp hay nhận biết tương tác?
+- **RQ2:** So với pooling/checkpoint tham chiếu, học alignment và thông tin thời gian cải thiện retrieval hoặc giảm chi phí tính toán đến đâu khi giữ nguyên điều kiện đánh giá?
 
----
+Mô hình closed-set bị giới hạn bởi tập nhãn học, nhưng không phải mọi thay đổi quy tắc đều đòi huấn luyện lại toàn bộ mô hình. Hành vi nhìn thấy, độ khớp câu và phán quyết vi phạm là các đại lượng khác nhau.
 
-## 2. Hai Vấn đề Nghiên cứu & Phát triển Cốt lõi (Core R&D Problems)
+## 2. Thuật ngữ, đầu ra và giới hạn
 
-Dự án tập trung giải quyết **hai vấn đề khoa học và kỹ thuật trọng tâm**:
+| Khái niệm | Định nghĩa dùng trong dự án |
+|---|---|
+| HOI detection | Đầu ra gồm person box, object box/class, interaction label, confidence và frame/video ID. Vector HOI chỉ là biểu diễn trung gian. |
+| Zero-shot HOI | Nhóm nhãn unseen không tham gia huấn luyện/chọn cấu hình cho lần đánh giá đó. Phải công bố chính xác loại giữ lại: tổ hợp tương tác, động từ hoặc vật thể. |
+| Open-vocabulary | Nhận tập khái niệm qua văn bản; phải ghi rõ thành phần nào mở. Không đồng nghĩa nhận đúng mọi mô tả tùy ý. |
+| Shared Semantic Embedding Space | Biểu diễn hai phương thức được học căn chỉnh; cùng số chiều và chuẩn hóa L2 chưa đủ. |
+| Reproduction | Tách chạy lại evaluator trên dự đoán công bố, chạy inference checkpoint và huấn luyện lại. Ba mức không được gọi thay cho nhau. |
+| Domain transfer | Chuyển môi trường/camera; không tự chứng minh khả năng nhận biết lớp unseen. |
 
-### Vấn đề 1: Học biểu diễn tương tác Người + Vật thể từ một tập dữ liệu tổng quát cho trước (General HOI Representation Learning)
-- **Bản chất vấn đề:** Thay vì huấn luyện mỗi hành vi tương tác trên một tập dữ liệu đặc thù riêng lẻ (task-specific training per behavior) — điều gây tốn kém tài nguyên và không có tính khái quát, đề tài nghiên cứu phương pháp **mô hình hóa và học biểu diễn tương tác Người + Vật thể theo không–thời gian (Spatio-Temporal HOI)** từ một tập dữ liệu chung/tổng quát cho trước.
-- **Mục tiêu nghiên cứu:** Xây dựng cơ chế trích xuất đặc trưng ngoại hình (Appearance), hình học và chuyển động tương đối (Relative Geometry & Motion Trajectory) của cặp Người–Vật qua chuỗi khung hình (Tubelets / Pair Windows), kết hợp kỹ thuật nén thời gian (Temporal Sampling / Temporal Attention Pooling) để tạo ra vector đại diện hành vi $Z_{\text{video}}$ có khả năng khái quát hóa cho nhiều loại tương tác khác nhau mà không cần huấn luyện lại từ đầu cho từng hành vi hẹp.
+Đầu ra M1 mục tiêu: video_id, frame_id/timestamp_s, person_bbox_xyxy, object_bbox_xyxy, object_label, interaction_label, score; track_id tùy phương pháp. Định nghĩa hệ tọa độ, đơn vị, class mapping và NMS/top-K theo evaluator. Dữ liệu dự đoán này **chưa có** trong manifest pilot.
 
-### Vấn đề 2: Ánh xạ và so khớp vector biểu diễn ngữ nghĩa giữa Video và Văn bản (Cross-Modal Embedding Mapping & Matching)
-- **Bản chất vấn đề:** Tồn tại khoảng cách ngữ nghĩa lớn (Semantic Gap) giữa dữ liệu chuỗi thị giác động trong video và mô tả quy tắc an toàn bằng văn bản tự nhiên. Các mô hình nền tảng thị giác–ngôn ngữ (như CLIP) vốn được tiền huấn luyện trên cặp ảnh tĩnh–văn bản, chưa được tối ưu hóa cho tương tác có chiều thời gian và cấu trúc hành vi phức tạp.
-- **Mục tiêu nghiên cứu:** Nghiên cứu cơ chế **ánh xạ (mapping / projection)** và **căn chỉnh (cross-modal alignment)** giữa hai vector biểu diễn ngữ nghĩa:
-  - Vector biểu diễn video $Z_{\text{video}}$: biểu diễn tương tác người–vật thể nén qua thời gian.
-  - Vector biểu diễn văn bản $Z_{\text{text}}$: trích xuất từ mô tả quy tắc ngôn ngữ tự nhiên thông qua bộ mã hóa văn bản (Text Encoder).
-  - Chiếu hai vector về một **không gian ngữ nghĩa chung (Shared Semantic Embedding Space)** và sử dụng hàm đo khoảng cách/độ tương đồng (Cosine Similarity / Metric Learning) để thực hiện so khớp mở (*zero-shot / open-vocabulary matching*), cho phép nhận biết hành vi tương ứng với quy tắc văn bản mà không bị ràng buộc vào các lớp phân loại đóng.
+Đầu ra M2: video_id, text_id, similarity, rank và retrieval_direction; embedding được lưu cùng encoder/checkpoint/hash/normalization. Cosine nằm trong [-1,1]; logits chia temperature không bị giới hạn trong khoảng này và không phải xác suất vi phạm.
 
----
+Phạm vi chính là nghiên cứu ngoại tuyến. Không yêu cầu realtime, nhận diện danh tính, nhiều camera, tự động hiểu luật pháp hoặc xây parser ngôn ngữ tùy ý. Ứng dụng ROI/dwell và demo chỉ triển khai khi không làm chậm các mốc nghiên cứu chính.
 
-## 3. Các Bên Liên quan (Stakeholders)
+## 3. Quyết định dữ liệu và baseline
 
-| Bên liên quan | Vai trò & Trách nhiệm | Nhu cầu chính & Tiêu chí mong đợi |
+### 3.1. Module 1: một tập nền tảng VidHOI
+
+Chọn **VidHOI** để duy trì phạm vi HOI trong video. Không trộn Action Genome, VIRAT hoặc ShanghaiTech vào một benchmark chung. Dữ liệu demo không thay benchmark này.
+
+[ST-HOI — Chiou et al., ACM ICMR Workshop 2021](https://github.com/coldmanck/VidHOI) là baseline lịch sử. Repository cho biết checkpoint cũ không còn được cung cấp, nhưng có dự đoán để kiểm tra evaluator. Vì vậy phải xác minh artifact trước khi cam kết chạy model; chấm lại dự đoán không phải tái lập inference/huấn luyện. Evaluator có quy ước lọc frame và oracle/predicted tracks riêng; phải khóa chúng.
+
+**Điều kiện W03 bắt buộc:** xác minh giao thức zero-shot được công bố trên VidHOI và một baseline hiện đại có mã/weights tương thích. ST-HOI không mặc nhiên đáp ứng điều kiện này. Nếu chưa tìm được:
+
+1. Ghi rõ phần tái lập zero-shot SOTA là **chưa đạt**, không thay bằng kết quả closed-set.
+2. Chỉ chạy nghiên cứu thí điểm với giao thức nội bộ được công bố dưới đây; không so trực tiếp với số SOTA khác split.
+3. Trước khi đầu tư huấn luyện lớn, ghi quyết định điều chỉnh baseline/phạm vi với người hướng dẫn; chưa tự đổi sang benchmark ảnh.
+
+**Giao thức nội bộ dự kiến nếu cần:** unseen-composition, vật thể và động từ thành phần có mặt trong seen nhưng một số cặp tương tác bị giữ lại. Tạo danh sách lớp bằng thống kê train và seed cố định, không dựa vào score test; loại khỏi supervised training các clip/window chứa nhãn unseen, kể cả qua nhãn âm hoặc feature cache. Tạo pseudo-unseen từ phần train để chọn cấu hình, tách khỏi unseen cuối. Lưu ID và báo cáo số lớp/mẫu sau lọc; chỉ thực hiện nếu mỗi nhóm đủ mẫu để đánh giá. Đây chưa phải split đã tạo.
+
+[SL-HOI, CVPR 2026](https://github.com/MPI-Lab/SL-HOI) là ứng viên khảo sát HOI ảnh, có công bố weights và yêu cầu CUDA; tài liệu cài đặt còn mục dependency chưa hoàn chỉnh. Không dùng kết quả trên HICO-DET thay cho kết quả VidHOI. Không tải thêm tập HOI thứ hai chỉ để làm đẹp bảng so sánh.
+
+### 3.2. Module 2: MSR-VTT
+
+Chọn **MSR-VTT**, protocol 9k-train/1k-test của [CLIP4Clip](https://github.com/ArrowLuo/CLIP4Clip); khóa file ID/caption và commit loader/evaluator. CLIP4Clip mean pooling là baseline lịch sử. Khảo sát thêm phương pháp hiện đại theo khả năng có checkpoint, cùng split và tài nguyên; chưa coi tên CLIP/OpenCLIP/CLIP4Clip là bằng chứng đã tái lập SOTA.
+
+Tên tham số val_csv trong ví dụ upstream có thể trỏ vào test; dự án không dùng test đó để chọn checkpoint. Để học head mới, giữ lại 10% video từ train làm validation bằng seed 42, lưu danh sách trước huấn luyện. Báo cáo đây là giao thức phát triển điều chỉnh. Nếu so với checkpoint dùng đầy đủ train, ghi rõ khác biệt; đối chứng nội bộ phải dùng cùng train/validation.
+
+Tập test/candidate pool chính thức giữ nguyên. Khóa cách dùng caption, khử bản sao, chiều truy vấn và xử lý nhiều positive. Dữ liệu caption tiếng Anh dùng cho benchmark; caption tiếng Việt dịch hoặc demo phải báo riêng. Caption sinh từ nhãn HOI là thí nghiệm bổ sung, không gọi là MSR-VTT.
+
+### 3.3. Pilot W02 và quyền dữ liệu
+
+Pilot hiện có: **8 đoạn, 5 video, 22,63 MiB**, 6 dev + 2 extension đã xem, 10 câu/80 cặp. Không có test độc lập, nhãn hộp HOI hay nhãn sự kiện vi phạm đã xác minh. Giới hạn 50 MiB, không bắt buộc 80 đoạn và không đặt số lượng mới để thay yêu cầu đó.
+
+Pilot dùng để kiểm tra I/O, schema, metric và đường chạy model; không đủ để tuyên bố chất lượng benchmark. Giữ provenance, hash, quyền dùng và phạm vi rà nhãn thực tế. Hash không chứng minh tác quyền; license code không tự áp cho footage.
+
+## 4. Yêu cầu chức năng và bằng chứng nghiệm thu
+
+Các mã FR được chuẩn hóa lại trong phiên bản này, không suy diễn trạng thái từ bảng FR cũ.
+
+| Mã | Yêu cầu mục tiêu | Bằng chứng cần có |
 |---|---|---|
-| **Người nghiên cứu** | Trực tiếp thiết kế, triển khai mô hình, xây dựng benchmark và thực nghiệm | Mã nguồn module hóa, pipeline thử nghiệm tái lập 100%, bộ đo lường định lượng minh bạch và theo dõi ca lỗi |
-| **Hội đồng Khoa học & Giảng viên** | Đánh giá tính mới, phương pháp luận và độ tin cậy học thuật | Đối chứng thực nghiệm khoa học (ablation matrix), phân tích đóng góp rõ ràng giữa phần kế thừa và phần tự phát triển, bằng chứng thực nghiệm khách quan |
-| **Người đánh giá / Người vận hành** | Thử nghiệm áp dụng quy tắc lên các kịch bản video giám sát | Khai báo quy tắc bằng ngôn ngữ tự nhiên, chọn vùng đa giác (Polygon ROI), xem lại sự kiện kèm bằng chứng trực quan (BBox, Track ID, Timestamp, Clip bằng chứng) |
+| FR01 | Đọc clip đúng khoảng [start,end), giới hạn bộ nhớ | Test timestamp, frame thiếu/hỏng, resize; log RAM loader riêng |
+| FR02 | Adapter benchmark và chống leakage | ID/split/class mapping/hash; kiểm tra trùng video và lớp held-out |
+| FR03 | HOI inference đúng schema | Dự đoán hộp/nhãn/score hợp lệ; ghi oracle/predicted; evaluator chạy được |
+| FR04 | Zero-shot/Open-vocabulary evaluation | Danh sách seen/unseen, nguồn supervision, mAP từng nhóm, bằng chứng không dùng unseen để chọn cấu hình |
+| FR05 | Học alignment M2 | Train/validation rõ; loss hữu hạn, tham số được cập nhật, checkpoint có optimizer/config; probe nhỏ xác nhận đường học |
+| FR06 | Retrieval hai chiều | R@1/5/10, MedR theo evaluator; test tính tay, candidate pool và positive mapping |
+| FR07 | So sánh baseline và ablation | Cùng split/encoder/ngân sách, log thí nghiệm; chênh lệch so với số tham chiếu và nguyên nhân |
+| FR08 | Tái lập và tài nguyên | Mã phiên bản, môi trường, checkpoint hash, seeds, peak RAM/VRAM, thời gian đo |
+| FR09 | Demo ROI/dwell có điều kiện | Quy tắc cấu trúc, hộp/track/thời gian; thiếu bằng chứng trả unknown, không đổi thành âm tính |
 
----
+FR01 có phần triển khai trong pilot; các FR khác chỉ được đánh dấu đạt khi có artifact tương ứng. Không dùng kiểm thử đơn vị để xác nhận đã hoàn thành nghiên cứu.
 
-## 4. Phạm vi Dự án (Project Scope)
+## 5. Huấn luyện và cấu hình khởi đầu
 
-### 4.1. Trong phạm vi (In-Scope)
-- **Môi trường & Dữ liệu:** Video giám sát từ camera cố định (CCTV), độ phân giải tiêu chuẩn (từ 640x340 đến 1100x720, 12–25 fps).
-- **Mô hình hóa Tương tác (HOI):** Phát hiện và bám vết Người và Vật thể trong từng khung hình, tạo cửa sổ cặp tương tác (Pair Windows), trích xuất đặc trưng vùng bao chung (Union Crop) và quỹ đạo chuyển động.
-- **Mã hóa Quy tắc An toàn:** Phân rã câu quy tắc tiếng Việt/tiếng Anh theo cấu trúc chuẩn hóa: `<Subject, Action, Object, Zone, Min Duration>`.
-- **Ánh xạ Đa phương thức:** Cơ chế chiếu vector video $Z_{\text{video}}$ và vector văn bản $Z_{\text{text}}$ vào không gian chung, đo độ tương đồng ngữ nghĩa.
-- **Suy luận Vi phạm Có căn cứ (Grounded Verification):** Kết hợp điểm so khớp hành vi với bộ lọc không gian (Spatial Polygon ROI) và bộ lọc thời lượng duy trì (Min Dwell Time) để xuất sự kiện vi phạm kèm bằng chứng truy vết.
-- **Đánh giá Khoa học:** Đánh giá trên bộ benchmark chuẩn hóa với siêu dữ liệu công khai (`data/manifests/`), đo lường Recall@K, Pairwise Accuracy, MRR và Event-F1 theo ngưỡng $\text{tIoU} \ge 0.5$.
+### 5.1. M1
 
-### 4.2. Ngoài phạm vi (Out-of-Scope)
-- Không huấn luyện lại các mô hình nền tảng từ đầu (như pretraining toàn bộ CLIP hay Detector).
-- Không giải quyết bài toán camera chuyển động phức tạp (PTZ) hoặc mạng lưới đa camera (Multi-camera Tracking).
-- Không định danh danh tính cá nhân (Re-ID / Face Recognition) hoặc truy vết quyền hạn riêng tư cá nhân.
-- Không nhận diện ngôn ngữ tự nhiên tùy ý không kiểm soát cấu trúc (unconstrained natural language).
-- Không yêu cầu xử lý thời gian thực tuyệt đối (Real-time Streaming); hệ thống ưu tiên độ chính xác và tính giải thích được cho bài toán xem lại và phân tích ngoại tuyến (*offline surveillance audit*).
+Tái lập baseline theo cấu hình của tác giả trong môi trường riêng trước khi thay encoder, số frame hoặc loss. Ghi detector tiền huấn luyện và supervision có thể đã bao phủ vật thể/khái niệm unseen; zero-shot được phát biểu theo nhãn downstream, không khẳng định pretraining không rò rỉ.
 
----
+Mọi cải tiến phải được học chung trên split seen, không fit classifier riêng cho từng quy tắc demo. Khi không đủ tài nguyên hoặc weights không truy cập được, ghi đúng mức chỉ chạy evaluator/prototype.
 
-## 5. Yêu cầu Chức năng (Functional Requirements)
+### 5.2. M2: cấu hình adapter nhẹ dự kiến
 
-| Mã FR | Tên chức năng | Mô tả chi tiết | Tiêu chí nghiệm thu |
-|---|---|---|---|
-| **FR01** | Đọc & Chuẩn hóa Video | Tiếp nhận video giám sát, giải mã khung hình theo thời gian thực tế, lấy mẫu đồng đều ($T=8$ khung hình) và kiểm tra tính toàn vẹn metadata | Video đọc đúng timestamp, không tạo khung đen giả khi lỗi; báo lỗi rõ ràng nếu file hỏng |
-| **FR02** | Khai báo & Phân rã Quy tắc | Tiếp nhận câu quy tắc an toàn và phân tích thành tuple cấu trúc: `<Chủ thể, Hành động, Đối tượng, Khu vực, Thời lượng>` | Câu quy chuẩn phân rã đúng các trường; câu sai cấu trúc bị từ chối kèm thông báo hướng dẫn |
-| **FR03** | Khai báo Vùng Không gian | Cho phép định nghĩa vùng kiểm tra bằng tọa độ đa giác chuẩn hóa (Normalized Polygon ROI) | Kiểm tra điểm neo của đối tượng thuộc/nằm ngoài vùng; xử lý đa giác lồi và lõm |
-| **FR04** | Nhận diện & Bám vết | Phát hiện vị trí Người và Vật thể trong khung hình, liên kết quỹ đạo (tubelets) qua thời gian | Cung cấp Bounding Box, Track ID và confidence score; không gán ID trùng lặp |
-| **FR05** | Thiết lập Cặp Tương tác | Ghép nối các cặp Người–Vật trong cửa sổ thời gian (Pair Windows), trích xuất Union Crop và vector chuyển động | Đúng mốc thời gian; có valid mask đối với các khung hình bị che khuất |
-| **FR06** | Ánh xạ & So khớp Đa phương thức | Chiếu biểu diễn video $Z_{\text{video}}$ và biểu diễn text $Z_{\text{text}}$ vào không gian chung; tính khoảng cách Cosine | Điểm số tương quan chuẩn hóa trong khoảng $[-1, 1]$; hỗ trợ so khớp đa nhãn (*multi-positive*) |
-| **FR07** | Phán quyết Vi phạm Có căn cứ | Kết hợp điểm tương quan ngữ nghĩa với điều kiện điểm neo trong vùng ROI và thời lượng duy trì tích lũy | Sự kiện vi phạm chỉ phát sinh khi thỏa mãn đồng thời: Hành vi khớp + Đúng vùng + Đủ thời lượng |
-| **FR08** | Xuất Sự kiện & Bằng chứng | Trích xuất sự kiện vi phạm gồm Bounding Box, Track ID, Rule ID, khoảng thời gian $[t_{\text{start}}, t_{\text{end}}]$ và video clip bằng chứng | Xuất file JSON/CSV chuẩn hóa; đoạn clip bằng chứng mở đúng khoảng thời gian vi phạm |
-| **FR09** | Xử lý Thiếu Bằng chứng | Ghi nhận trạng thái `insufficient_evidence` khi đối tượng bị che khuất hoặc mất dấu quá ngưỡng cho phép | Không tự ý quy đổi trạng thái thiếu quan sát thành âm tính (không vi phạm) chắc chắn |
+Cấu hình này là **đề xuất thử nghiệm**, chưa phải code/config đã chạy; không thay cấu hình tác giả khi báo reproduction.
 
----
+- Backbone: encoder ảnh/text cùng một checkpoint đã căn chỉnh; đóng băng backbone, precompute feature theo chunk nếu vừa dung lượng.
+- Video: mean pooling làm mốc; head tuyến tính làm mốc học; thử MLP chỉ sau khi mốc chạy được. D lấy theo encoder, không mặc định mọi model đều 512.
+- Loss: contrastive hai chiều, với tử số cộng exp(similarity/temperature) trên positive đã biết, mẫu số trên candidate hợp lệ; trung bình hai chiều. Mask caption cùng video và positive khác đã biết để tránh false negatives; không đưa nhãn unknown vào negative có giám sát.
+- Khởi đầu: AdamW, lr=1e-4, weight_decay=0.01, tối đa 10 epoch, patience=3, temperature=0.07 cố định; chọn checkpoint bằng validation R@1 text→video. Các số này cần kiểm chứng, không phải siêu tham số tối ưu.
+- Batch feature mục tiêu 16 video khác nhau; đo RAM trước. Decode batch=1 không bắt buộc batch học feature=1. Contrastive chỉ có một cặp và không có negatives không phải cấu hình học hợp lệ; gradient accumulation thông thường không tự mở rộng tập negatives.
+- Seed phát triển 42; khi đủ ngân sách, xác nhận bằng seeds 42/43/44, báo mean/std. Một seed phải được ghi là thăm dò.
+- Không fit bằng 8 đoạn pilot rồi gọi đó là benchmark MSR-VTT. Cache feature phải lưu encoder/preprocess/split hash; thay encoder làm mất hiệu lực cache.
 
-## 6. Yêu cầu Phi chức năng & Chất lượng Nghiên cứu (Non-Functional Requirements)
+## 6. Metrics và đánh giá công bằng
 
-1. **Tính Tái lập Khoa học (Scientific Reproducibility):**
-   - Môi trường tính toán và các gói phụ thuộc được khóa chặt chẽ thông qua `uv.lock`.
-   - Toàn bộ quá trình đánh giá và benchmark được cấu hình qua file cấu hình JSON/YAML, cố định seed ngẫu nhiên, gắn liền với commit Git và hash của tập dữ liệu.
-2. **Khả năng Giải thích & Minh chứng (Explainability & Grounding):**
-   - Mọi phán quyết vi phạm phải đi kèm bằng chứng trực quan cụ thể (vị trí hộp bao, định danh vệt chuyển động, biểu đồ thời gian).
-   - Hệ thống không đưa ra cảnh báo dưới dạng một "hộp đen" chỉ có nhãn nhị phân.
-3. **Tính Ổn định & Độ tin cậy (Robustness):**
-   - Xử lý mượt mà các trường hợp biên: video không có người, video không có tương tác, vật thể bị che khuất một phần, đối tượng di chuyển nhanh qua vùng cấm mà chưa đủ thời lượng duy trì.
-4. **Bảo mật & Quyền riêng tư Dữ liệu:**
-   - Hoạt động hoàn toàn cục bộ (*local execution*), không gửi dữ liệu video giám sát nhạy cảm lên các dịch vụ đám mây công cộng bên ngoài.
+### 6.1. M1: HOI mAP
 
----
+Dùng evaluator đúng benchmark; lưu phiên bản và tham số matching/top-K/lọc frame. AP tính theo từng lớp trên detection có score; mAP lấy trung bình lớp theo quy ước evaluator. Không thay bằng accuracy phân loại hoặc Event-F1.
 
-## 7. Kiến trúc Hệ thống & Ranh giới Mô-đun (System Architecture)
+Báo cáo full/seen/unseen theo protocol; rare/non-rare chỉ thêm khi định nghĩa chính thức phù hợp. Lớp không có positive phải được xử lý như evaluator quy định, không tự gán AP=0. Nếu dùng frame-level mAP, không gọi kết quả là temporal tube mAP.
 
-Hệ thống được tổ chức thành 3 tầng chức năng độc lập:
+### 6.2. M2: retrieval
 
-```text
-[Video Input] ──> [Tầng 1: Perception & Tracking] ──> [Pair Windows & Tubelets]
-                                                               │
-                                                               ▼
-[Text Rules]  ──> [Module NLP: Rule Parser]        [Tầng 2: Spatio-Temporal HOI]
-                           │                                   │
-                           ▼                                   ▼
-                   [Z_text Vector]                    [Z_video Vector]
-                           │                                   │
-                           └───────────────┬───────────────────┘
-                                           ▼
-                    [Tầng 3: Cross-Modal Alignment & Matching]
-                                           │
-                                           ▼
-                               [Matching Similarity]
-                                           │
-                       [Spatial Polygon ROI + Min Dwell Time]
-                                           │
-                                           ▼
-                    [Sự kiện Vi phạm có Bằng chứng Grounding]
-```
+Gọi r_q là thứ hạng 1-based của positive đầu tiên cho truy vấn q:
+- R@K = mean(1[r_q <= K]), K=1,5,10.
+- MedR = median(r_q), thấp hơn tốt hơn.
+- MRR = mean(1/r_q), cao hơn tốt hơn; là metric phụ.
+- R@3 và Pairwise Accuracy là phép chẩn đoán pilot; hòa điểm pairwise không tính là thắng.
 
-### Chi tiết các phân hệ:
-- **Phân hệ Thị giác (Vision Subsystem):** Đóng gói trong `temporal_hoi.data`. Thực hiện giải mã video, lấy mẫu đồng đều $T$ khung hình, trích xuất đặc trưng ngoại hình và chuyển động.
-- **Phân hệ Ngôn ngữ (Language Subsystem):** Tiếp nhận quy tắc, phân tích cú pháp thành schema chuẩn, sử dụng Text Encoder tiền huấn luyện để trích xuất vector ngữ nghĩa.
-- **Phân hệ So khớp & Quyết định (Matching & Grounded Decision Subsystem):** Đóng gói trong `temporal_hoi.evaluation` và pipeline suy luận. Ánh xạ vector embedding, tính điểm tương đồng, kiểm tra điều kiện không–thời gian và phát sinh cảnh báo có bằng chứng.
+Báo riêng text→video và video→text, số query/candidate, số positive và tie-breaking. Truy vấn chưa gán nhãn loại khỏi phép đo với số lượng báo rõ; không tính là âm tính. Trong benchmark, giữ evaluator chính thức; khác định nghĩa multi-positive phải báo thành bảng riêng.
 
----
+### 6.3. Ứng dụng vi phạm tùy chọn
 
-## 8. Mô hình Dữ liệu & Cấu trúc Siêu dữ liệu (Data Schemas)
+Ghép sự kiện dự đoán theo score giảm dần với GT cùng video_id/rule_id, mỗi GT tối đa một lần, tIoU >= 0.5. Báo Event-P/R/F1; dự đoán trùng tính FP. Mẫu số bằng 0 trả None/null. FA/hour chỉ tính trên thời lượng nền đã xác minh, ghi số cảnh báo và số giờ, không ngoại suy từ vài chục giây thành độ tin cậy vận hành.
 
-Dữ liệu được tổ chức chuẩn hóa trong thư mục `data/manifests/` với các thực thể chính:
+### 6.4. Ablation và kết luận
 
-| Thực thể | File lưu trữ | Các trường dữ liệu cốt lõi |
+| Thí nghiệm | Biến thay đổi | Biến giữ cố định |
 |---|---|---|
-| **Video Clip** | `clips.csv` | `clip_id`, `video_id`, `camera_id`, `resolution`, `fps`, `start_s`, `end_s`, `behavior_label`, `has_violation` |
-| **Quy tắc Văn bản** | `texts.csv` | `text_id`, `text_en`, `text_vi`, `subject`, `action`, `object`, `zone_type`, `is_violation_rule` |
-| **Phân chia Tập** | `splits.csv` | `clip_id`, `session_id`, `split` (`dev` hoặc `extension`) |
-| **Tương quan Clip–Text** | `relevance.csv` | `clip_id`, `text_id`, `relevance` (`1` là phù hợp, `0` là không phù hợp, rỗng là chưa xác định) |
-| **Nguồn gốc & Bản quyền** | `sources.csv` | `source_id`, `clip_id`, `license`, `provenance_url`, `sha256_checksum` |
+| B0 → B1 | Global → union crop | Encoder, pooling, head, nguồn dữ liệu |
+| C00/C10/C01/C11 | Temporal tắt/bật × geometry tắt/bật | Union crop, head H, số chiều, train split, optimizer/ngân sách |
+| Head ablation | Linear → MLP/alignment head mới | Cùng cấu hình C và dữ liệu |
+| Oracle → predicted | Nguồn hộp/quỹ đạo | Model/evaluator và tập frame so sánh phù hợp |
 
----
+C00 là mốc có head H được học; không đồng nhất với B1 frozen. Ghi số tham số, độ trễ, RAM/VRAM để tránh quy cải thiện đơn thuần do tăng dung lượng model thành đóng góp cơ chế.
 
-## 9. Tiêu chuẩn Đánh giá & Độ đo Nghiên cứu (Evaluation Standards)
+Temporal module phải có timestamp/positional encoding và valid mask. Geometry chuẩn hóa theo kích thước frame; vận tốc dùng delta_position/delta_time, xử lý delta_time <= 0 và track gap. Sampling là chọn frame, không phải attention. Kiểm tra thứ tự trên ví dụ có nội dung bất đối xứng; không yêu cầu mọi chuỗi đảo ngược đều đổi output.
 
-### 9.1. Bài toán So khớp Video–Văn bản (Video–Text Matching)
-Đánh giá năng lực của không gian biểu diễn đa phương thức trong việc liên kết đúng hành vi video với mô tả văn bản tương ứng:
-- **Multi-positive Recall@K ($K=1, 3, 5$):** Tỷ lệ các câu truy vấn đúng được xếp hạng trong top-$K$ kết quả trả về khi một clip có thể khớp với nhiều câu mô tả hợp lệ.
-- **Pairwise Accuracy:** Tỷ lệ các cặp (Clip, Text Đúng) có điểm số tương đồng cao hơn cặp đối chứng (Clip, Text Sai).
-- **Mean Reciprocal Rank (MRR):** Giá trị nghịch đảo thứ hạng trung bình của kết quả đúng đầu tiên.
+Ưu tiên 3 seeds cho mô hình có học và bootstrap theo video để phản ánh tương quan caption, nếu đủ ngân sách. Công bố độ bất định, kết quả âm và giới hạn; mục tiêu cải thiện không phải điều kiện bắt buộc để được ghi nhận đã thực hiện thí nghiệm.
 
-### 9.2. Bài toán Phát hiện Sự kiện Vi phạm Thời gian (Temporal Event Detection)
-Đánh giá năng lực phát hiện chính xác thời điểm và loại vi phạm diễn ra trong video:
-- **Temporal IoU (tIoU):** Đo lường mức độ trùng khớp giữa khoảng thời gian dự đoán $[t_{\text{pred\_start}}, t_{\text{pred\_end}}]$ và khoảng thời gian thực tế $[t_{\text{gt\_start}}, t_{\text{gt\_end}}]$:
-  $$\text{tIoU} = \frac{|I_{\text{pred}} \cap I_{\text{gt}}|}{|I_{\text{pred}} \cup I_{\text{gt}}|}$$
-- **Greedy Bipartite Matching (Ngưỡng $\text{tIoU} \ge 0.5$):** Khớp 1-to-1 giữa sự kiện dự đoán và nhãn thực tế cùng loại luật. Các dự đoán lặp lại (duplicate predictions) hoặc ngoài khoảng vi phạm bị phạt là False Positive (FP).
-- **Event-Precision, Event-Recall, Event-F1:** Đánh giá mức độ chính xác và độ bao phủ của các sự kiện phát hiện được.
-- **False Alarms / Hour (Tỷ lệ báo động giả mỗi giờ):** Số lượng cảnh báo sai phát sinh trên các đoạn video hoạt động bình thường, đo lường độ tin cậy thực tế của hệ thống.
+## 7. Schema và ranh giới triển khai
 
----
+Schema **hiện có** trong data/manifests:
 
-## 10. Rủi ro Kỹ thuật & Biện pháp Giảm thiểu (Technical Risks & Mitigations)
+| File | Trường thực tế chính |
+|---|---|
+| clips.csv | clip_id, video_path, video_id, session_id, start_s, end_s, behavior_id, rule_id, has_violation, zone_polygon, zone_status, event_start_s, event_end_s, evaluation_eligible |
+| texts.csv | text_id, behavior_id, prompt_text, prompt_type, description |
+| splits.csv | clip_id, split, session_id |
+| relevance.csv | clip_id, text_id, is_match, reviewer, reviewed_at |
+| sources.csv | video_id, video_path, source_url, attribution, license_status, license_url, source_checked_at, sha256, bytes, duration_s, fps |
 
-| Rủi ro Kỹ thuật | Khả năng | Tác động | Biện pháp Giảm thiểu |
-|---|---|---|---|
-| **Khoảng cách Ngữ nghĩa (Cross-Modal Gap):** Vector video và vector text không căn chỉnh tốt khi chỉ dùng mô hình zero-shot tĩnh | Trung bình | Cao | Thử nghiệm lớp chiếu adapter nhẹ; kết hợp thêm đặc trưng hình học chuyển động để bổ trợ cho đặc trưng ngoại hình |
-| **Nhiễu từ Bám vết Đối tượng (Tracking Failures):** Track ID bị đứt gãy hoặc nhảy vệt do che khuất | Cao | Trung bình | Tách biệt đánh giá trên quỹ đạo chuẩn (Oracle Tracks) và quỹ đạo dự đoán (Predicted Tracks); ghi nhận trạng thái `insufficient_evidence` |
-| **Báo động giả do Ngưỡng nhạy cảm:** Báo vi phạm ngay khi đối tượng chỉ vừa đi lướt qua vùng cấm | Trung bình | Cao | Áp dụng cơ chế làm mịn thời gian (Temporal Dwell Smoothing) với ngưỡng thời lượng tối thiểu bắt buộc |
-| **Rò rỉ Dữ liệu (Data Leakage):** Trùng lặp bối cảnh/phiên quay giữa tập phát triển và tập đánh giá | Thấp | Cao | Khóa chặt giao thức phân chia split theo `session_id` và `camera_id` gốc trong `splits.csv` |
+Pilot loader hiện cho dev/val/test/extension; chưa hỗ trợ split train. Nhãn has_violation trống → None; relevance chỉ nhận 0/1, cặp chưa biết không có dòng. Metadata độ phân giải/fps có thể lấy từ reader; không giả định chúng là cột bắt buộc trong clips.csv.
 
----
+**Phần cần triển khai W03–W04:** adapter train/validation/evaluation cho benchmark, annotation HOI/box/track/class mapping, caption IDs, seen/unseen lists; giữ nguyên annotation gốc và lưu mapping. Không đổi tên tập val chính thức thành test rồi che giấu nguồn gốc: tách tên split upstream khỏi vai trò model-selection/final-evaluation. Nếu benchmark chỉ có val công khai để chấm, dùng phần train giữ lại cho model-selection và báo rõ final-evaluation là official val.
 
-## 11. Hướng phát triển Mở rộng (Future Extensions)
+Ranh giới code mục tiêu:
+- data: đọc/biến đổi/split/adapter; không chứa mạng học.
+- models và training: encoder/head/loss/optimizer/checkpoint, **chưa triển khai**.
+- inference: dự đoán và xếp hạng; application tùy chọn cho ROI/dwell.
+- evaluation: metric và adapter evaluator; không học head hoặc ra quyết định luật.
 
-- **Mô hình Đồ thị Tương tác Động (Dynamic HOI Scene Graphs):** Mở rộng từ mô hình hóa cặp đơn lẻ sang đồ thị tương tác đa người – đa vật thể theo thời gian.
-- **Căn chỉnh Không gian–Thời gian Mịn (Fine-Grained Spatio-Temporal Grounding):** Định vị chính xác vùng hộp bao của hành vi vi phạm ở cấp độ pixel-level hoặc spatial attention maps.
-- **Tổng quát hóa Cấu trúc Luật (Compositional Rule Generalization):** Hỗ trợ các quy tắc an toàn có cấu trúc logic phức tạp hơn (điều kiện phủ định, logic kết hợp AND/OR giữa nhiều hành động).
+## 8. Tài nguyên, tính tái lập và rủi ro
+
+- Ưu tiên máy cá nhân, đọc một clip/lần, không tải toàn bộ benchmark trong W02. Đo riêng dung lượng raw/frame/cache/checkpoint và RAM/VRAM inference/training.
+- W03 phải ghi phần cứng thực, RAM/VRAM còn trống, tốc độ trên mẫu nhỏ và ước lượng toàn bộ run trước khi cam kết; không suy RAM model từ loader <200 MiB.
+- Môi trường CPU Python 3.12 của dự án không mặc nhiên tương thích repository baseline cũ/CUDA. Tách môi trường thay vì ép nâng/hạ toàn bộ môi trường pilot.
+- Không tự mua GPU hoặc chuyển video riêng tư lên dịch vụ ngoài. Thiếu compute thì giới hạn công bố ở mức thực sự kiểm chứng; giai đoạn 2 có thể tiếp tục sau 10 tuần.
+- Lưu commit, dataset/split/checkpoint hash, seed, preprocessing, thời gian, số lần chạy, evaluator và log lỗi. Kiểm tra tái lập trong môi trường đã mô tả, dùng tolerance thích hợp; không cam kết giống tuyệt đối trên mọi thiết bị.
+- Detector lỗi: phân tích riêng oracle/predicted. Nhãn thiếu: giữ unknown. Dataset không truy cập được: ghi blocked cho thí nghiệm đó và làm phần độc lập; không đổi dữ liệu để giả lập điểm chuẩn.
+- ROI/dwell nếu triển khai: cấu hình cấu trúc và câu mẫu được kiểm soát, không nhận video/text tùy ý rồi hứa hiểu mọi quy tắc. Bbox không phải segmentation pixel-level; attention map không tự là bằng chứng định vị đúng.
+
+## 9. Hai giai đoạn và điều kiện hoàn thành
+
+**Giai đoạn 1 đạt** khi cả hai module có baseline mục tiêu, protocol/evaluator khóa, kết quả có thể đối chiếu, phân tích sai lệch/bottleneck và thí nghiệm cải tiến có kiểm soát. Baseline lịch sử không tự đáp ứng mục tiêu tái lập SOTA hiện đại; nếu ứng viên mới chưa chạy được, ghi rõ phần đó chưa hoàn thành. Cải thiện nhẹ mAP/R@K hoặc giảm MedR là mục tiêu, không hứa trước.
+
+**Giai đoạn 2 bắt đầu** khi đã có bằng chứng giai đoạn 1 và ngân sách được xác định. Chọn một cơ chế mới từ lỗi quan sát, nêu giả thuyết, phép bác bỏ và tiêu chí đo. Đầu ra là code, đối chứng và bản thảo trung thực; tính mới, khả năng được nhận bài và xếp loại luận văn cần đánh giá bên ngoài.
+
+**W01/W02 cập nhật 30/09/2026:** đã hoàn thiện nội dung chuẩn bị/pilot, bảng khảo sát và sơ đồ hai module; bổ sung R@K/MRR/MedR hai chiều có kiểm thử. Báo cáo sẵn để nộp, chưa xác nhận bàn giao bên ngoài. Đây không phải hoàn thành toàn bộ PRD: adapter benchmark, evaluator HOI, reproduction và training vẫn theo các tuần tiếp theo trong Plan. Xem [kiểm chứng](../outputs/w02/completion_verification.json); log cũ được giữ riêng, không ghi lùi kết quả mới.
