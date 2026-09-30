@@ -1,157 +1,167 @@
 # Temporal HOI Video–Text Matching
 
-> **Hệ thống nhận biết tương tác người–vật thể theo thời gian (Spatio-Temporal HOI) và so khớp video–văn bản (Video–Text Matching) phục vụ phát hiện vi phạm an ninh, trật tự.**
+> **Nghiên cứu mô hình hóa tương tác người–vật thể theo thời gian (Spatio-Temporal HOI) kết hợp so khớp video–văn bản (Video–Text Matching) nhằm phát hiện sự kiện vi phạm quy định có căn cứ bằng chứng trực quan.**
 
 [![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.6%2B-orange.svg)](https://pytorch.org/)
 [![OpenCLIP](https://img.shields.io/badge/OpenCLIP-2.30%2B-green.svg)](https://github.com/mlfoundations/open_clip)
 [![Package Manager](https://img.shields.io/badge/uv-managed-purple.svg)](https://docs.astral.sh/uv/)
-[![Tests](https://img.shields.io/badge/tests-21%20passed-brightgreen.svg)]()
 
 ---
 
-## 1. Giới thiệu tổng quan (Overview)
+## 1. Đặt vấn đề & Mục tiêu Nghiên cứu (Problem Formulation & Objectives)
 
-Trong các hệ thống giám sát an ninh camera (CCTV) tại khu đô thị và chung cư (khuôn viên, hầm gửi xe, khu tập kết rác, đường nội bộ), việc phát hiện vi phạm quy định thường gặp khó khăn do mô hình phân loại đóng truyền thống không thể thích ứng linh hoạt với các quy định an toàn bằng văn bản tự nhiên.
+### 1.1. Bối cảnh khoa học
+Trong bài toán phân tích hành vi video giám sát, các phương pháp nhận dạng hành vi tập đóng truyền thống (*closed-set action recognition*) phụ thuộc chặt chẽ vào số lượng nhãn cố định và đòi hỏi thu thập dữ liệu huấn luyện lại mỗi khi phát sinh quy định mới. Hơn nữa, việc chỉ phân loại hành động đơn lẻ không phản ánh được bản chất tương tác giữa người và vật thể theo thời gian, đồng thời dễ gây nhầm lẫn giữa **hành vi thuần túy** (ví dụ: dừng xe, đặt đồ vật) và **hành vi vi phạm** (chỉ vi phạm khi đặt sai khu vực quy định hoặc vượt quá thời lượng cho phép).
 
-Dự án **Temporal HOI Video–Text Matching** nghiên cứu giải pháp giám sát an ninh thông minh kết hợp giữa hai hướng tiếp cận bổ trợ:
-1. **So khớp Video–Văn bản (Zero-shot Video–Text Matching):** Tận dụng mô hình thị giác–ngôn ngữ lớn tiền huấn luyện (như OpenCLIP) kết hợp lấy mẫu khung hình theo thời gian (Uniform Temporal Sampling) để xếp hạng độ tương quan giữa clip giám sát và các câu mô tả hành vi mà không cần huấn luyện lại từ đầu.
-2. **Phát hiện Vi phạm Không–Thời gian (Spatio-Temporal Event Violation Detection):** Phân tách rõ ràng giữa **nhận biết hành vi** (*Action Understanding*) và **quyết định vi phạm** (*Spatial-Temporal Logic*). Kết hợp bám vết đối tượng (Person & Object Tracking), đa giác vùng quy định (Spatial ROI Polygon), và thời lượng duy trì tối thiểu (Min Dwell Time) để xuất sự kiện vi phạm có đầy đủ bằng chứng trực quan (Bounding Box, Track ID, Timestamp, Clip bằng chứng).
+### 1.2. Mục tiêu nghiên cứu tổng quát
+Đề tài tập trung nghiên cứu giải pháp phát hiện sự kiện vi phạm linh hoạt bằng ngôn ngữ tự nhiên thông qua hai trục kỹ thuật cốt lõi:
+1. **Mô hình hóa tương tác Người–Vật thể Không–Thời gian (Spatio-Temporal HOI Modeling):** Biểu diễn chuỗi chuyển động, quỹ đạo tương đối và đặc trưng ngoại hình của cặp đối tượng qua thời gian.
+2. **So khớp Đa phương thức & Suy luận có Căn cứ (Cross-Modal Matching & Grounded Verification):** Căn chỉnh biểu diễn hành vi video với câu quy định dạng văn bản trong không gian ngữ nghĩa chung, kết hợp kiểm tra điều kiện không gian (Spatial ROI Polygon) và thời gian (Min Dwell Time) để xuất sự kiện vi phạm có đầy đủ bằng chứng truy vết.
 
-### Điểm nổi bật
-- **Mô hình hóa tương tác động (Spatio-Temporal HOI):** Nắm bắt mối tương quan chuyển động giữa người và vật thể (quỹ đạo, khoảng cách tương đối, vector vận tốc) qua chuỗi khung hình thay vì phân tích đơn lẻ từng khung tĩnh.
-- **Tách biệt hành vi và phán quyết vi phạm:** Một hành vi (ví dụ: dừng xe, để đồ vật) chỉ trở thành vi phạm khi xảy ra tại vùng cấm và vượt quá ngưỡng thời gian quy định, giúp hạn chế báo động giả (False Alarms).
-- **Hệ thống đánh giá chặt chẽ:** Tích hợp bộ độ đo truy vấn đa nhãn ($R@1, R@3, R@5$, Pairwise Accuracy, MRR) và thuật toán ghép 1-to-1 tham lam (Greedy Bipartite Matching với ngưỡng $\text{tIoU} \ge 0.5$) để đánh giá sự kiện vi phạm khách quan.
+### 1.3. Các câu hỏi nghiên cứu (Research Questions)
+- **RQ1 (Chính – Spatio-Temporal Modeling vs. Baseline):** Cơ chế tổng hợp thời gian (*Temporal Attention / Temporal Adapter*) kết hợp đặc trưng hình học–chuyển động (*Geometry & Motion Trajectory*) có mang lại hiệu quả nhận biết tương tác vượt trội so với baseline lấy trung bình khung hình (*Global / Union Mean Pooling*) trên cùng một visual backbone và ngân sách tính toán hay không?
+- **RQ2 (Hỗ trợ – Cross-Modal Alignment):** Một lớp chiếu / adapter nhỏ (*Projection Layer*) có thể căn chỉnh hiệu quả biểu diễn hành vi nén theo thời gian $Z_{\text{action}}$ với biểu diễn văn bản $Z_{\text{text}}$ từ mô hình ngôn ngữ lớn (như OpenCLIP Text) trong phạm vi dữ liệu giám sát hay không?
+- **RQ3 (Kiểm soát Báo động giả – Grounded Decision):** Việc tách bạch độc lập giữa *Module nhận thức hành vi* (Action Understanding) và *Module kiểm tra quy tắc không–thời gian* (Spatial-Temporal Logic) giúp giảm thiểu tỷ lệ báo động giả (*False Alarms/hour*) như thế nào so với các phương pháp phân loại nhị phân vi phạm trực tiếp?
 
 ---
 
-## 2. Kiến trúc Pipeline (System Pipeline)
+## 2. Kiến trúc Hệ thống Đề xuất (Proposed Methodology)
 
-Hệ thống được thiết kế theo luồng xử lý 3 tầng kết hợp hai nhánh thu nhận thông tin (Thị giác và Ngôn ngữ):
+Quy trình xử lý được thiết kế theo kiến trúc 3 tầng phân định rạch ròi giữa nhận thức thị giác, mã hóa ngôn ngữ và suy luận logic:
 
 ```mermaid
 flowchart TD
-    subgraph VisionBranch["Nhánh Thị Giác (Vision Pipeline)"]
-        V["Video Input"] --> P["Tầng 1: Perception & Tracking<br/>Detector & Tracker"]
-        P --> H["Ghép cặp Người - Vật<br/>Pair Windows & Tubelets"]
-        H --> F["Tầng 2: Spatio-Temporal HOI<br/>Union Crop + Geometry/Motion"]
-        F --> T["Temporal Sampling & Aggregation<br/>Uniform Sampling / Attention"]
-        T --> ZV["Vector Hành vi Z_action"]
+    subgraph VisionBranch["Nhánh Thị Giác: Spatio-Temporal HOI"]
+        V["Chuỗi Video Giám sát"] --> P["Tầng 1: Perception & Tracking<br/>Phát hiện đối tượng & Bám vết (Tubelets)"]
+        P --> H["Tạo Cặp Đối tượng<br/>Pair Windows (Người - Vật)"]
+        H --> F["Trích xuất Đặc trưng<br/>Union Crop + Geometry/Motion Trajectory"]
+        F --> T["Tầng 2: Nén Thời gian<br/>Temporal Sampling / Attention Pooling"]
+        T --> ZV["Vector Biểu diễn Hành vi Z_action"]
     end
 
-    subgraph LanguageBranch["Nhánh Ngôn Ngữ (Language Pipeline)"]
-        R["Quy định / Luật Văn Bản"] --> NLP["Module NLP: Phân rã Schema Luật<br/>Subject - Action - Object - Zone - Duration"]
-        NLP --> TE["Text Encoder<br/>OpenCLIP Text Backbone"]
-        TE --> ZT["Vector Văn bản Z_text"]
+    subgraph LanguageBranch["Nhánh Ngôn Ngữ: Quy tắc An toàn"]
+        R["Quy định Văn bản Tự nhiên"] --> NLP["Module NLP: Phân rã Cấu trúc Luật<br/>Tuple: <Subject, Action, Object, Zone, Duration>"]
+        NLP --> TE["Text Encoder (OpenCLIP)<br/>Mã hóa mô tả hành vi"]
+        TE --> ZT["Vector Biểu diễn Văn bản Z_text"]
     end
 
-    subgraph DecisionBranch["Tầng 3: Alignment, Matching & Quyết Định"]
-        ZV & ZT --> AL["Multimodal Alignment & Similarity<br/>Cosine Distance in Shared Space"]
-        AL --> M["Matching Score"]
-        M --> D["Logic Vi Phạm & Lọc Không-Thời Gian<br/>Spatial Zone Polygon + Min Dwell Time"]
-        NLP -.->|Thông tin Vùng & Điều kiện| D
-        D --> OUT["Sự Kiện Vi Phạm & Bằng Chứng<br/>(Track ID, Rule ID, Timestamp, Video Clip Bằng chứng)"]
+    subgraph DecisionBranch["Tầng 3: Căn chỉnh Đa phương thức & Quyết định Vi phạm"]
+        ZV & ZT --> AL["Multimodal Alignment<br/>Cosine Similarity trong Shared Semantic Space"]
+        AL --> M["Điểm Tương quan Hành vi (Matching Score)"]
+        M --> D["Suy luận Logic Không-Thời gian<br/>Kiểm tra Đa giác Vùng (ROI) & Thời lượng Tối thiểu"]
+        NLP -.->|Thông tin Vùng quy định & Ngưỡng thời gian| D
+        D --> OUT["Sự kiện Vi phạm & Bằng chứng Trực quan<br/>(Track ID, Rule ID, Khoảng thời gian, Video Clip bằng chứng)"]
     end
 ```
 
-### Chi tiết các tầng xử lý:
+### Các tầng xử lý chi tiết:
 
-1. **Tầng 1 – Perception & Tracking:**
-   - Tiếp nhận luồng video giám sát (chuẩn hóa tỷ lệ khung hình và timestamp).
-   - Phát hiện vị trí (Bounding Box) của Người và Vật thể liên quan trong từng khung hình.
-   - Bám vết đa đối tượng (Multi-Object Tracking) để duy trì định danh và thiết lập chuỗi quỹ đạo liên tục.
+1. **Tầng 1 – Nhận thức & Bám vết (Perception & Tracking):**
+   - Giải mã video với tần số lấy mẫu chuẩn hóa, bảo toàn mốc thời gian (*timestamps*).
+   - Xác định bounding box của Người và Vật thể liên quan qua từng khung hình.
+   - Liên kết quỹ đạo đa đối tượng (*Multi-Object Tracking*) tạo thành các chuỗi tubelets liên tục.
 
-2. **Tầng 2 – Spatio-Temporal HOI Modeling:**
-   - Liên kết các cặp đối tượng tiềm năng (Người – Vật) trong cửa sổ thời gian (Pair Windows).
-   - Trích xuất đặc trưng ngoại hình qua vùng hộp bao kết hợp (Union Box) sử dụng backbone thị giác.
-   - Tích hợp chuỗi chuyển động và lấy mẫu khung hình đồng đều (Uniform Temporal Sampling) để tổng hợp thành vector đại diện hành vi $Z_{\text{action}}$.
+2. **Tầng 2 – Biểu diễn Tương tác Người–Vật Không–Thời gian (Spatio-Temporal HOI):**
+   - Thiết lập cửa sổ tương tác (*Pair Windows*) giữa người và vật thể tiềm năng.
+   - Trích xuất đặc trưng ngoại hình từ vùng bao chung (*Union Crop*) qua Visual Backbone đóng băng.
+   - Bổ sung vector chuyển động tương đối (tọa độ tâm, khoảng cách, biến thiên vận tốc).
+   - Sử dụng cơ chế nén thời gian (*Temporal Aggregation / Uniform Sampling*) để tổng hợp thành vector hành vi $Z_{\text{action}}$.
 
-3. **Module NLP – Rule Decomposition & Text Encoding:**
-   - Tiếp nhận câu quy tắc an toàn bằng văn bản tự nhiên theo mẫu kiểm soát.
-   - Phân rã cấu trúc logic thành bộ tham số: `<Subject, Action, Object, Zone, Min Duration>`.
-   - Mã hóa mô tả hành vi qua Text Encoder để thu được vector đặc trưng văn bản $Z_{\text{text}}$.
+3. **Module NLP – Phân rã Quy tắc & Mã hóa Văn bản (Rule Decomposition & Text Encoding):**
+   - Phân tích câu quy tắc bằng ngôn ngữ tự nhiên theo cấu trúc ngữ nghĩa xác định: `[Chủ thể] [Hành động] [Đối tượng] [Khu vực] [Thời lượng tối thiểu]`.
+   - Chuẩn hóa mô tả hành vi và chiếu qua Text Encoder để sinh vector biểu diễn văn bản $Z_{\text{text}}$.
 
-4. **Tầng 3 – Alignment, Matching & Grounded Decision:**
-   - **Matching:** Tính toán độ tương đồng giữa hành vi quan sát được và nội dung quy định trong không gian ngữ nghĩa chung.
-   - **Spatial-Temporal Logic:** Kiểm tra tọa độ với vùng đa giác quy định (Polygon ROI) và thời lượng tối thiểu (Min Dwell Time) để kết luận vi phạm chính xác kèm bằng chứng truy vết.
-
----
-
-## 3. Quy ước Dữ liệu & Chuẩn Đánh giá (Data & Evaluation Standards)
-
-### Cấu trúc siêu dữ liệu (Manifests)
-Dữ liệu thử nghiệm được quản lý chặt chẽ qua các bảng danh mục chuẩn hóa trong `data/manifests/`:
-- `clips.csv`: Danh mục video clip kèm metadata (camera, độ phân giải, fps, thời lượng).
-- `texts.csv`: Bộ prompt văn bản chuẩn hóa gồm mô tả hành vi tích cực và âm tính khó (*hard negatives*).
-- `splits.csv`: Phân chia tập dữ liệu tách biệt theo `session_id`/`video_id` gốc để ngăn ngừa rò rỉ dữ liệu (*data leakage*).
-- `relevance.csv`: Ma trận gán nhãn liên kết giữa từng clip và câu prompt văn bản.
-- `sources.csv`: Nhật ký nguồn gốc, bản quyền và checksum đảm bảo tính toàn vẹn của dữ liệu.
-
-### Tiêu chuẩn đo lường
-1. **So khớp Video–Văn bản (Video–Text Matching):**
-   - Hỗ trợ đa nhãn đúng (*multi-positive ranking*).
-   - Độ đo: **Recall@K** ($K=1, 3, 5$), **Pairwise Accuracy** (tỷ lệ cặp đúng có điểm cao hơn cặp sai), và **MRR** (*Mean Reciprocal Rank*).
-2. **Phát hiện Sự kiện Vi phạm (Event Violation Detection):**
-   - Khớp nối sự kiện dự đoán với ground-truth bằng thuật toán **Ghép 1-to-1 tham lam (Greedy Bipartite Matching)** với ngưỡng trùng lặp thời gian $\text{tIoU} \ge 0.5$.
-   - Các cảnh báo trùng lặp hoặc ngoài khoảng vi phạm bị tính là False Positive (FP).
-   - Báo cáo chi tiết **Precision**, **Recall**, **Event-F1** và **Tỷ lệ báo động giả (False Alarms/giờ)** trên video hoạt động bình thường.
+4. **Tầng 3 – Căn chỉnh Ngữ nghĩa & Phán quyết Vi phạm (Alignment & Grounded Verification):**
+   - **Cross-Modal Matching:** Tính toán độ tương đồng cosine giữa $Z_{\text{action}}$ và $Z_{\text{text}}$ trong không gian ngữ nghĩa chung.
+   - **Spatial-Temporal Logic:** Kiểm tra tọa độ điểm neo của người/vật đối với đa giác vùng cấm ($\mathcal{P}_{\text{zone}}$) và tính toán thời lượng duy trì tích lũy ($\Delta t \ge t_{\text{threshold}}$).
+   - Sự kiện chỉ được kích hoạt khi đồng thời thỏa mãn cả tương quan ngữ nghĩa hành vi và ràng buộc không–thời gian.
 
 ---
 
-## 4. Cấu trúc thư mục (Repository Structure)
+## 3. Thiết kế Thực nghiệm & Ma trận Đối chứng (Experimental Setup & Ablation Matrix)
+
+Để trả lời khách quan các câu hỏi nghiên cứu, hệ thống thiết lập ma trận thực nghiệm đối chứng trên cùng tập dữ liệu, cùng visual backbone và cùng ngân sách siêu tham số:
+
+| Cấu hình | Biểu diễn Thị giác | Biểu diễn Thời gian | Biểu diễn Hình học/Chuyển động | Mục đích Khoa học |
+|---|---|---|---|---|
+| **$B_0$ (Global Baseline)** | Toàn khung hình (Global Frame) | Lấy trung bình (Mean Pooling) | Không | Đánh giá ảnh hưởng của bối cảnh nền tĩnh đối với CLIP |
+| **$B_1$ (Local Baseline)** | Vùng bao cặp Người–Vật (Union Crop) | Lấy trung bình (Mean Pooling) | Không | Baseline trực tiếp đo lường lợi ích của việc định vị cặp tương tác |
+| **$A_1$ (Temporal Ablation)** | Vùng bao cặp Người–Vật (Union Crop) | Temporal Attention / Sampling | Không | Đánh giá đóng góp độc lập của cơ chế mô hình hóa thời gian |
+| **$A_2$ (Geometry Ablation)** | Vùng bao cặp Người–Vật (Union Crop) | Lấy trung bình (Mean Pooling) | Tọa độ tương đối & Vận tốc | Đánh giá đóng góp độc lập của đặc trưng vị trí và chuyển động |
+| **$P$ (Proposed Method)** | Vùng bao cặp Người–Vật (Union Crop) | Temporal Attention / Aggregation | Tọa độ tương đối & Vận tốc | Phương pháp đề xuất đầy đủ, kết hợp đa nguồn đặc trưng |
+
+---
+
+## 4. Giao thức Đánh giá & Chuẩn Siêu dữ liệu (Benchmark Protocols)
+
+### 4.1. Hệ thống Siêu dữ liệu Benchmark (`data/manifests/`)
+Nhằm loại bỏ hiện tượng rò rỉ dữ liệu (*data leakage*) và đảm bảo tính tái lập khoa học:
+- `clips.csv`: Danh mục 8 clip giám sát thực nghiệm kèm độ phân giải, fps, khoảng thời gian thực.
+- `texts.csv`: Bộ 20 prompt văn bản chuẩn hóa gồm mô tả hành vi tích cực và các câu âm tính khó (*hard negatives*).
+- `splits.csv`: Phân chia tập dữ liệu tách biệt theo `session_id`/`video_id` gốc (tập phát triển `dev` và tập mở rộng `extension`).
+- `relevance.csv`: Ma trận gán nhãn tương quan đa nhãn đúng (*multi-positive annotations*).
+- `sources.csv`: Thông tin bản quyền, giấy phép mở và mã băm toàn vẹn (SHA256 checksum) của từng mẫu dữ liệu.
+
+### 4.2. Hệ thống Độ đo Đánh giá
+1. **Bài toán So khớp Video–Văn bản (Video–Text Retrieval / Matching):**
+   - Hỗ trợ đa nhãn đúng trên từng đoạn clip (*multi-positive ground truth*).
+   - Độ đo: **Multi-positive Recall@K** ($K=1, 3, 5$), **Pairwise Accuracy** (tần suất chấm điểm cặp đúng cao hơn cặp sai đối chứng), và **MRR** (*Mean Reciprocal Rank*).
+2. **Bài toán Phát hiện Sự kiện Vi phạm Thời gian (Temporal Event Detection):**
+   - Sử dụng thuật toán **Ghép 1-to-1 tham lam (Greedy Bipartite Matching)** giữa tập sự kiện dự đoán và nhãn thực tế với ngưỡng chồng lấn thời gian $\text{tIoU} \ge 0.5$.
+   - Các dự đoán lặp lại hoặc ngoài khoảng thời gian quy định bị trừng phạt dưới dạng False Positive (FP).
+   - Đo lường **Event-Precision**, **Event-Recall**, **Event-F1** và tính toán **Tỷ lệ báo động giả (False Alarms/giờ)** trên các video hoạt động bình thường.
+
+---
+
+## 5. Cấu trúc Repository (Repository Structure)
 
 ```text
-├── configs/                   # File cấu hình thực nghiệm và tham số benchmark
+├── configs/                   # Cấu hình thực nghiệm và siêu tham số benchmark
 ├── data/
-│   ├── manifests/             # Siêu dữ liệu chuẩn hóa (clips, texts, splits, relevance, sources)
-│   └── raw/                   # Video giám sát thô (quản lý cục bộ, gitignore)
-├── docs/                      # Tài liệu kỹ thuật và đặc tả hệ thống
-│   └── prd.md                 # Product Requirements Document & kiến trúc chi tiết
-├── scripts/                   # Kịch bản kiểm toán dữ liệu, benchmark và tiện ích
-│   ├── check_environment.py   # Kiểm tra tính toàn vẹn của môi trường và thư viện
-│   ├── audit_data.py          # Kiểm toán dữ liệu và tính hợp lệ của manifest
-│   └── review_samples.py      # Trích xuất ảnh contact sheet phục vụ kiểm duyệt nhãn
-├── src/                       # Mã nguồn chính của dự án
+│   ├── manifests/             # Siêu dữ liệu benchmark (clips, texts, splits, relevance, sources)
+│   │   └── archive/           # Lưu trữ các bản snapshot manifest trước kiểm toán
+│   └── raw/                   # Video dữ liệu thực nghiệm (quản lý ngoại tuyến, gitignore)
+├── docs/                      # Tài liệu nghiên cứu khoa học
+│   └── prd.md                 # Đặc tả yêu cầu kỹ thuật, giả thuyết và kiến trúc chi tiết
+├── scripts/                   # Kịch bản kiểm toán dữ liệu và tiện ích thực nghiệm
+│   ├── check_environment.py   # Kiểm tra môi trường tính toán (PyTorch, TorchVision, OpenCLIP)
+│   ├── audit_data.py          # Kiểm toán tính toàn vẹn và phân bổ nhãn benchmark
+│   └── review_samples.py      # Trích xuất contact sheet trực quan hóa mẫu nghiên cứu
+├── src/                       # Mã nguồn thuật toán và mô hình
 │   └── temporal_hoi/
-│       ├── data/              # VideoReader (uniform sampling) & TemporalHOIDataset
-│       └── evaluation/        # Bộ hàm đo lường (Recall@K, Pairwise Accuracy, tIoU, Bipartite Matching)
-├── tests/                     # Bộ kiểm thử tự động toàn diện (unit tests)
-│   ├── test_data.py           # Kiểm thử bộ đọc video và dataset loader
-│   └── test_metrics.py        # Kiểm thử toán học các độ đo matching và sự kiện
-├── pyproject.toml             # Cấu hình dự án và khai báo dependencies chuẩn PEP 621
-├── uv.lock                    # Khóa phiên bản thư viện đảm bảo tính tái lập tuyệt đối
-└── README.md                  # Tài liệu giới thiệu tổng quan dự án
+│       ├── data/              # VideoReader (uniform temporal sampling) & TemporalHOIDataset
+│       └── evaluation/        # Module độ đo toán học (Recall@K, Pairwise Acc, tIoU, Bipartite Matching)
+├── tests/                     # Bộ kiểm thử tự động xác minh tính đúng đắn thuật toán
+│   ├── test_data.py           # Kiểm thử bộ đọc giải mã khung hình và dataset loader
+│   └── test_metrics.py        # Kiểm thử tính toán độ đo, trường hợp biên và ma trận tương đồng
+├── pyproject.toml             # Khai báo môi trường và gói phụ thuộc chuẩn PEP 621
+├── uv.lock                    # Khóa phiên bản thư viện đảm bảo tính tái lập 100%
+└── README.md                  # Giới thiệu tổng quan đề tài và phương pháp nghiên cứu
 ```
 
 ---
 
-## 5. Cài đặt & Bắt đầu nhanh (Quickstart)
+## 6. Cài đặt & Tái lập Kết quả (Setup & Reproducibility)
 
-Dự án sử dụng **Python 3.12** và trình quản lý gói [**uv**](https://docs.astral.sh/uv/) để đảm bảo tính tái lập trên mọi môi trường.
-
-### Yêu cầu tiên quyết
-- Python 3.12
-- Cài đặt `uv` (nếu chưa có):
-  ```powershell
-  powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-  ```
+Dự án sử dụng **Python 3.12** kết hợp trình quản lý môi trường [**uv**](https://docs.astral.sh/uv/) nhằm đảm bảo khả năng tái lập kết quả nghiên cứu trên mọi hệ thống.
 
 ### Cài đặt môi trường
 
 ```powershell
-# 1. Đồng bộ môi trường ảo theo file uv.lock (bao gồm nhóm dev)
+# 1. Khởi tạo môi trường ảo và đồng bộ thư viện chính xác theo uv.lock
 uv sync --locked --group dev
 
-# 2. Kiểm tra tính toàn vẹn môi trường (PyTorch, TorchVision NMS, CLIP, OpenCV)
+# 2. Xác minh tính toàn vẹn của môi trường nghiên cứu
 uv run --frozen python scripts/check_environment.py
 
-# 3. Chạy bộ kiểm thử tự động
+# 3. Thực thi toàn bộ bộ kiểm thử tự động
 uv run pytest
 ```
 
-### Sử dụng mã nguồn cơ bản
+### Sử dụng Module Nghiên cứu trong Thực nghiệm
 
-#### 1. Đọc dữ liệu với `TemporalHOIDataset`
+#### 1. Nạp dữ liệu qua `TemporalHOIDataset`
 ```python
 from temporal_hoi.data import TemporalHOIDataset
 
@@ -166,27 +176,28 @@ dataset = TemporalHOIDataset(
 )
 
 sample = dataset[0]
-print(f"Clip ID: {sample['clip_id']}")
-print(f"Số khung hình trích xuất: {len(sample['pil_frames'])}")
-print(f"Nhãn vi phạm: {sample['has_violation']}")
+print(f"Mẫu: {sample['clip_id']} | Số frame trích xuất: {len(sample['pil_frames'])} | Nhãn vi phạm: {sample['has_violation']}")
 ```
 
-#### 2. Đánh giá sự kiện vi phạm với Bipartite Matching
+#### 2. Tính toán độ đo sự kiện với Bipartite Matching ($\text{tIoU} \ge 0.5$)
 ```python
 from temporal_hoi.evaluation import compute_event_metrics
 
-# Định dạng sự kiện: dict chứa start_s, end_s, rule_id, v.v.
-gt_events = [{"video_id": "c1", "rule_id": "R01", "start_s": 2.0, "end_s": 8.0}]
-pred_events = [{"video_id": "c1", "rule_id": "R01", "start_s": 2.5, "end_s": 7.8, "score": 0.92}]
+# Dữ liệu sự kiện chuẩn hóa theo giây
+ground_truth = [{"video_id": "clip_01", "rule_id": "R01", "start_s": 2.0, "end_s": 8.0}]
+predictions  = [{"video_id": "clip_01", "rule_id": "R01", "start_s": 2.2, "end_s": 7.9, "score": 0.88}]
 
-results = compute_event_metrics(gt_events, pred_events, tiou_threshold=0.5)
-print(f"Precision: {results['precision']:.2f}, Recall: {results['recall']:.2f}, F1: {results['f1']:.2f}")
+results = compute_event_metrics(ground_truth, predictions, tiou_threshold=0.5)
+print(f"Precision: {results['precision']:.3f} | Recall: {results['recall']:.3f} | Event-F1: {results['f1']:.3f}")
 ```
 
 ---
 
-## 6. Tài liệu liên quan (References)
+## 7. Tài liệu & Nguồn Tham khảo (References)
 
-- **[Product Requirements Document (PRD)](docs/prd.md)**: Chi tiết yêu cầu kỹ thuật, phạm vi MVP, schema dữ liệu và tiêu chí nghiệm thu.
-- **[Thư mục Báo cáo định kỳ (Google Drive)](https://drive.google.com/drive/folders/1gzjTKl1uKl0Vh60P39wmgpQdl2FZudV1?hl=vi)**: Thư mục lưu trữ tài liệu, slide thuyết trình và các bản báo cáo định kỳ.
-- **Nguồn nghiên cứu liên quan:** [OpenCLIP](https://github.com/mlfoundations/open_clip), [CLIP4Clip](https://github.com/ArrowLuo/CLIP4Clip), [VidHOI](https://github.com/coldmanck/VidHOI).
+- **[Product Requirements Document (PRD)](docs/prd.md)**: Chi tiết câu hỏi nghiên cứu, giả thuyết định hướng, đặc tả schema dữ liệu và tiêu chí nghiệm thu.
+- **[Thư mục Báo cáo định kỳ (Google Drive)](https://drive.google.com/drive/folders/1gzjTKl1uKl0Vh60P39wmgpQdl2FZudV1?hl=vi)**: Thư mục lưu trữ tài liệu nghiên cứu, slide bảo vệ và báo cáo chuyên đề định kỳ.
+- **Tài liệu học thuật liên quan:**
+  - Radford et al., *Learning Transferable Visual Models From Natural Language Supervision (CLIP)*, ICML 2021.
+  - Luo et al., *CLIP4Clip: An Empirical Study of CLIP for End to End Video Clip Retrieval*, Neurocomputing 2022.
+  - Chuang et al., *VidHOI: Video-and-Language Spatio-Temporal Human-Object Interaction*, TPAMI 2023.
