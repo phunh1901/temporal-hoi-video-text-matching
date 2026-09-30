@@ -1,191 +1,179 @@
-# PRD Đồ án Temporal HOI Video–Text Matching
+# Product Requirements Document (PRD)
+# Temporal HOI Video–Text Matching
 
-> **Tài liệu thiết kế phiên bản cũ.** Từ 28/09/2026, phạm vi và tiêu chí thực hiện hiện hành nằm trong [plan.md](../plan.md) và [Excel tiến độ đã cập nhật](../outputs/Ke_hoach_do_an_10_tuan.xlsx): phát hiện vi phạm không train/fine-tune riêng theo hành vi; nghiên cứu video–text matching; một báo cáo tổng hợp mỗi thứ Sáu. Các yêu cầu học adapter/projection, bộ dữ liệu HOI và chỉ tiêu cải thiện trong PRD này không còn là cam kết bắt buộc của kế hoạch mới. Chỉ tham khảo các phần còn phù hợp, đối chiếu với kế hoạch hiện hành.
+**Tên đề tài:** Nghiên cứu mô hình hóa tương tác người–vật thể theo thời gian (Spatio-Temporal HOI) và so khớp video–văn bản (Video–Text Matching) phục vụ phát hiện vi phạm quy định có căn cứ bằng chứng.  
+**Người thực hiện:** Ngô Hoàng Phú  
+**Trạng thái tài liệu:** Tài liệu đặc tả yêu cầu kỹ thuật và phân tích đề tài nghiên cứu (PRD).
 
-**Phiên bản:** 0.1 — đề xuất phạm vi triển khai, ngày 23/09/2026.  
-**Người thực hiện:** Ngô Hoàng Phú.  
-**Thời gian đã xác nhận:** 14/09–22/11/2026, 20 giờ/tuần; có thể thuê GPU.  
-**Trạng thái sản phẩm:** chuẩn bị môi trường và tài liệu. Các yêu cầu dưới đây là tiêu chí cần xây dựng, không phải khả năng đã có.
+---
 
-## 1. Mục đích và bài toán
+## 1. Tổng quan Đề tài & Bối cảnh Khoa học (Research Context)
 
-Xây dựng nguyên mẫu hỗ trợ xem lại video để phát hiện một số tương tác người–vật trái với luật đã khai báo. Hệ thống liên kết hành vi trong video với mô tả văn bản, rồi xét loại luật, vùng và thời gian để tạo sự kiện có bằng chứng.
+### 1.1. Bối cảnh bài toán
+Trong các hệ thống giám sát an ninh (CCTV) tại khu dân cư, chung cư và đô thị (khuôn viên, bãi đỗ xe, điểm tập kết rác, đường nội bộ), nhu cầu phát hiện các hành vi vi phạm quy định an toàn ngày càng trở nên cấp thiết. Tuy nhiên, các giải pháp thị giác máy tính truyền thống chủ yếu dựa trên bài toán **nhận dạng hành vi tập đóng (*closed-set action recognition*)**. 
 
-Ví dụ, cùng hành vi cầm chai có thể được phép ngoài vùng A nhưng bị cấm trong vùng A. Model nhận biết hành vi; mô-đun luật quyết định điều kiện vi phạm. Hệ thống không tự suy ra quyền truy cập của cá nhân hoặc hiểu mọi quy định an toàn từ câu bất kỳ.
+Cách tiếp cận này bộc lộ những hạn chế nghiêm trọng:
+- **Kém linh hoạt:** Mỗi khi có một quy định mới phát sinh (ví dụ: cấm dắt xe đạp qua sân chơi trẻ em, cấm đỗ xe sai vị trí, cấm để rác ngoài giờ quy định), hệ thống đòi hỏi phải định nghĩa lại lớp nhãn, thu thập dữ liệu chuyên biệt và huấn luyện lại toàn bộ mô hình từ đầu.
+- **Thiếu tương tác Người–Vật thể theo thời gian:** Phần lớn mô hình chỉ phân loại hành động đơn lẻ hoặc nhận diện đối tượng tĩnh, không nắm bắt được mối quan hệ động (quỹ đạo tương đối, vận tốc, biến thiên vị trí) giữa Người và Vật qua chuỗi thời gian.
+- **Nhầm lẫn giữa Hành vi và Phán quyết Vi phạm:** Một hành vi (ví dụ: dừng xe, cầm đồ vật) bản thân nó không phải là vi phạm; hành vi đó chỉ trở thành vi phạm khi diễn ra tại khu vực cấm (vùng không gian) và kéo dài vượt quá ngưỡng thời gian cho phép.
 
-Sản phẩm phục vụ trình diễn và đánh giá nghiên cứu trước giảng viên/hội đồng. Báo cáo phải chỉ rõ phần kế thừa, phần tự triển khai, lợi ích hoặc giới hạn của cải tiến và cách tái lập kết quả.
+---
 
-## 2. Người dùng và luồng sử dụng
+## 2. Hai Vấn đề Nghiên cứu & Phát triển Cốt lõi (Core R&D Problems)
 
-| Người dùng | Nhu cầu | Đầu ra |
+Dự án tập trung giải quyết **hai vấn đề khoa học và kỹ thuật trọng tâm**:
+
+### Vấn đề 1: Học biểu diễn tương tác Người + Vật thể từ một tập dữ liệu tổng quát cho trước (General HOI Representation Learning)
+- **Bản chất vấn đề:** Thay vì huấn luyện mỗi hành vi tương tác trên một tập dữ liệu đặc thù riêng lẻ (task-specific training per behavior) — điều gây tốn kém tài nguyên và không có tính khái quát, đề tài nghiên cứu phương pháp **mô hình hóa và học biểu diễn tương tác Người + Vật thể theo không–thời gian (Spatio-Temporal HOI)** từ một tập dữ liệu chung/tổng quát cho trước.
+- **Mục tiêu nghiên cứu:** Xây dựng cơ chế trích xuất đặc trưng ngoại hình (Appearance), hình học và chuyển động tương đối (Relative Geometry & Motion Trajectory) của cặp Người–Vật qua chuỗi khung hình (Tubelets / Pair Windows), kết hợp kỹ thuật nén thời gian (Temporal Sampling / Temporal Attention Pooling) để tạo ra vector đại diện hành vi $Z_{\text{video}}$ có khả năng khái quát hóa cho nhiều loại tương tác khác nhau mà không cần huấn luyện lại từ đầu cho từng hành vi hẹp.
+
+### Vấn đề 2: Ánh xạ và so khớp vector biểu diễn ngữ nghĩa giữa Video và Văn bản (Cross-Modal Embedding Mapping & Matching)
+- **Bản chất vấn đề:** Tồn tại khoảng cách ngữ nghĩa lớn (Semantic Gap) giữa dữ liệu chuỗi thị giác động trong video và mô tả quy tắc an toàn bằng văn bản tự nhiên. Các mô hình nền tảng thị giác–ngôn ngữ (như CLIP) vốn được tiền huấn luyện trên cặp ảnh tĩnh–văn bản, chưa được tối ưu hóa cho tương tác có chiều thời gian và cấu trúc hành vi phức tạp.
+- **Mục tiêu nghiên cứu:** Nghiên cứu cơ chế **ánh xạ (mapping / projection)** và **căn chỉnh (cross-modal alignment)** giữa hai vector biểu diễn ngữ nghĩa:
+  - Vector biểu diễn video $Z_{\text{video}}$: biểu diễn tương tác người–vật thể nén qua thời gian.
+  - Vector biểu diễn văn bản $Z_{\text{text}}$: trích xuất từ mô tả quy tắc ngôn ngữ tự nhiên thông qua bộ mã hóa văn bản (Text Encoder).
+  - Chiếu hai vector về một **không gian ngữ nghĩa chung (Shared Semantic Embedding Space)** và sử dụng hàm đo khoảng cách/độ tương đồng (Cosine Similarity / Metric Learning) để thực hiện so khớp mở (*zero-shot / open-vocabulary matching*), cho phép nhận biết hành vi tương ứng với quy tắc văn bản mà không bị ràng buộc vào các lớp phân loại đóng.
+
+---
+
+## 3. Các Bên Liên quan (Stakeholders)
+
+| Bên liên quan | Vai trò & Trách nhiệm | Nhu cầu chính & Tiêu chí mong đợi |
 |---|---|---|
-| Sinh viên/người nghiên cứu | So baseline và cải tiến trên cùng dữ liệu | Metric, run/config và ca lỗi truy vết được |
-| Giảng viên/hội đồng | Kiểm tra đóng góp và phương pháp đánh giá | Đối chứng, ablation, giới hạn và video minh chứng |
-| Người vận hành demo | Áp dụng luật lên video và vùng cụ thể | Người/vật, hành vi, thời gian và bằng chứng |
+| **Người nghiên cứu** | Trực tiếp thiết kế, triển khai mô hình, xây dựng benchmark và thực nghiệm | Mã nguồn module hóa, pipeline thử nghiệm tái lập 100%, bộ đo lường định lượng minh bạch và theo dõi ca lỗi |
+| **Hội đồng Khoa học & Giảng viên** | Đánh giá tính mới, phương pháp luận và độ tin cậy học thuật | Đối chứng thực nghiệm khoa học (ablation matrix), phân tích đóng góp rõ ràng giữa phần kế thừa và phần tự phát triển, bằng chứng thực nghiệm khách quan |
+| **Người đánh giá / Người vận hành** | Thử nghiệm áp dụng quy tắc lên các kịch bản video giám sát | Khai báo quy tắc bằng ngôn ngữ tự nhiên, chọn vùng đa giác (Polygon ROI), xem lại sự kiện kèm bằng chứng trực quan (BBox, Track ID, Timestamp, Clip bằng chứng) |
 
-Luồng MVP:
+---
 
-1. Chọn video mẫu hoặc upload video tương thích.
-2. Chọn luật mẫu hoặc nhập câu thuộc mẫu hỗ trợ; kiểm tra schema hiển thị hành vi, vật thể, loại luật và điều kiện.
-3. Vẽ/chọn polygon vùng; xác nhận điểm neo người/vật và quy tắc vào/ra vùng.
-4. Chọn B1 hoặc mô hình cải tiến, chạy ngoại tuyến và theo dõi trạng thái.
-5. Xem overlay box/ID, bảng event và đoạn bằng chứng; so sánh trên cùng input.
-6. Xuất JSON/CSV và video. Không có event, lỗi xử lý và thiếu bằng chứng phải được phân biệt.
+## 4. Phạm vi Dự án (Project Scope)
 
-## 3. Mục tiêu nghiên cứu và hoàn thành
+### 4.1. Trong phạm vi (In-Scope)
+- **Môi trường & Dữ liệu:** Video giám sát từ camera cố định (CCTV), độ phân giải tiêu chuẩn (từ 640x340 đến 1100x720, 12–25 fps).
+- **Mô hình hóa Tương tác (HOI):** Phát hiện và bám vết Người và Vật thể trong từng khung hình, tạo cửa sổ cặp tương tác (Pair Windows), trích xuất đặc trưng vùng bao chung (Union Crop) và quỹ đạo chuyển động.
+- **Mã hóa Quy tắc An toàn:** Phân rã câu quy tắc tiếng Việt/tiếng Anh theo cấu trúc chuẩn hóa: `<Subject, Action, Object, Zone, Min Duration>`.
+- **Ánh xạ Đa phương thức:** Cơ chế chiếu vector video $Z_{\text{video}}$ và vector văn bản $Z_{\text{text}}$ vào không gian chung, đo độ tương đồng ngữ nghĩa.
+- **Suy luận Vi phạm Có căn cứ (Grounded Verification):** Kết hợp điểm so khớp hành vi với bộ lọc không gian (Spatial Polygon ROI) và bộ lọc thời lượng duy trì (Min Dwell Time) để xuất sự kiện vi phạm kèm bằng chứng truy vết.
+- **Đánh giá Khoa học:** Đánh giá trên bộ benchmark chuẩn hóa với siêu dữ liệu công khai (`data/manifests/`), đo lường Recall@K, Pairwise Accuracy, MRR và Event-F1 theo ngưỡng $\text{tIoU} \ge 0.5$.
 
-**RQ1, chính:** temporal attention và geometry/motion có giúp nhận biết tương tác tốt hơn mean pooling trên cùng CLIP backbone, split, loss và ngân sách chọn siêu tham số không?
+### 4.2. Ngoài phạm vi (Out-of-Scope)
+- Không huấn luyện lại các mô hình nền tảng từ đầu (như pretraining toàn bộ CLIP hay Detector).
+- Không giải quyết bài toán camera chuyển động phức tạp (PTZ) hoặc mạng lưới đa camera (Multi-camera Tracking).
+- Không định danh danh tính cá nhân (Re-ID / Face Recognition) hoặc truy vết quyền hạn riêng tư cá nhân.
+- Không nhận diện ngôn ngữ tự nhiên tùy ý không kiểm soát cấu trúc (unconstrained natural language).
+- Không yêu cầu xử lý thời gian thực tuyệt đối (Real-time Streaming); hệ thống ưu tiên độ chính xác và tính giải thích được cho bài toán xem lại và phân tích ngoại tuyến (*offline surveillance audit*).
 
-**RQ2, hỗ trợ:** projection/adapter nhỏ có căn chỉnh được representation temporal với text trong phạm vi dữ liệu đã chọn không?
+---
 
-Việc dùng projection/InfoNCE có sẵn không tự là thuật toán mới. Tính mới phải đối chiếu literature; đóng góp tối thiểu là triển khai có kiểm soát, đánh giá tái lập và phân tích bằng chứng.
+## 5. Yêu cầu Chức năng (Functional Requirements)
 
-| Nhóm | Tiêu chí hoàn thành |
-|---|---|
-| Nghiên cứu | B0/B1, phương pháp đề xuất, ablation temporal/geometry và phân tích ít nhất 10 ca lỗi |
-| Dữ liệu | Nguồn/license, manifest, split, nhãn và số lượng thực; không chọn model/ngưỡng trên test |
-| Sản phẩm | Video tới event bằng predicted tracks; export, 3 tình huống đối chứng và hướng dẫn |
-| Tái lập | Kết quả gắn commit, config, seed, split/weight hash và predictions |
-| Bàn giao | Repo, báo cáo tổng thể, 10 báo cáo tuần, slide, video dự phòng và checklist nộp |
+| Mã FR | Tên chức năng | Mô tả chi tiết | Tiêu chí nghiệm thu |
+|---|---|---|---|
+| **FR01** | Đọc & Chuẩn hóa Video | Tiếp nhận video giám sát, giải mã khung hình theo thời gian thực tế, lấy mẫu đồng đều ($T=8$ khung hình) và kiểm tra tính toàn vẹn metadata | Video đọc đúng timestamp, không tạo khung đen giả khi lỗi; báo lỗi rõ ràng nếu file hỏng |
+| **FR02** | Khai báo & Phân rã Quy tắc | Tiếp nhận câu quy tắc an toàn và phân tích thành tuple cấu trúc: `<Chủ thể, Hành động, Đối tượng, Khu vực, Thời lượng>` | Câu quy chuẩn phân rã đúng các trường; câu sai cấu trúc bị từ chối kèm thông báo hướng dẫn |
+| **FR03** | Khai báo Vùng Không gian | Cho phép định nghĩa vùng kiểm tra bằng tọa độ đa giác chuẩn hóa (Normalized Polygon ROI) | Kiểm tra điểm neo của đối tượng thuộc/nằm ngoài vùng; xử lý đa giác lồi và lõm |
+| **FR04** | Nhận diện & Bám vết | Phát hiện vị trí Người và Vật thể trong khung hình, liên kết quỹ đạo (tubelets) qua thời gian | Cung cấp Bounding Box, Track ID và confidence score; không gán ID trùng lặp |
+| **FR05** | Thiết lập Cặp Tương tác | Ghép nối các cặp Người–Vật trong cửa sổ thời gian (Pair Windows), trích xuất Union Crop và vector chuyển động | Đúng mốc thời gian; có valid mask đối với các khung hình bị che khuất |
+| **FR06** | Ánh xạ & So khớp Đa phương thức | Chiếu biểu diễn video $Z_{\text{video}}$ và biểu diễn text $Z_{\text{text}}$ vào không gian chung; tính khoảng cách Cosine | Điểm số tương quan chuẩn hóa trong khoảng $[-1, 1]$; hỗ trợ so khớp đa nhãn (*multi-positive*) |
+| **FR07** | Phán quyết Vi phạm Có căn cứ | Kết hợp điểm tương quan ngữ nghĩa với điều kiện điểm neo trong vùng ROI và thời lượng duy trì tích lũy | Sự kiện vi phạm chỉ phát sinh khi thỏa mãn đồng thời: Hành vi khớp + Đúng vùng + Đủ thời lượng |
+| **FR08** | Xuất Sự kiện & Bằng chứng | Trích xuất sự kiện vi phạm gồm Bounding Box, Track ID, Rule ID, khoảng thời gian $[t_{\text{start}}, t_{\text{end}}]$ và video clip bằng chứng | Xuất file JSON/CSV chuẩn hóa; đoạn clip bằng chứng mở đúng khoảng thời gian vi phạm |
+| **FR09** | Xử lý Thiếu Bằng chứng | Ghi nhận trạng thái `insufficient_evidence` khi đối tượng bị che khuất hoặc mất dấu quá ngưỡng cho phép | Không tự ý quy đổi trạng thái thiếu quan sát thành âm tính (không vi phạm) chắc chắn |
 
-Mục tiêu mong muốn: tăng khoảng 2 điểm phần trăm macro-AP so B1 trên validation, hoặc giảm false alarms tại recall tương đương. Đây là giả thuyết định hướng, cần chốt sau baseline tuần 3, không phải kết quả/cam kết đạt được. Kết quả âm vẫn phải báo trung thực cùng ablation.
+---
 
-## 4. Phạm vi MVP
+## 6. Yêu cầu Phi chức năng & Chất lượng Nghiên cứu (Non-Functional Requirements)
 
-### Bắt buộc
+1. **Tính Tái lập Khoa học (Scientific Reproducibility):**
+   - Môi trường tính toán và các gói phụ thuộc được khóa chặt chẽ thông qua `uv.lock`.
+   - Toàn bộ quá trình đánh giá và benchmark được cấu hình qua file cấu hình JSON/YAML, cố định seed ngẫu nhiên, gắn liền với commit Git và hash của tập dữ liệu.
+2. **Khả năng Giải thích & Minh chứng (Explainability & Grounding):**
+   - Mọi phán quyết vi phạm phải đi kèm bằng chứng trực quan cụ thể (vị trí hộp bao, định danh vệt chuyển động, biểu đồ thời gian).
+   - Hệ thống không đưa ra cảnh báo dưới dạng một "hộp đen" chỉ có nhãn nhị phân.
+3. **Tính Ổn định & Độ tin cậy (Robustness):**
+   - Xử lý mượt mà các trường hợp biên: video không có người, video không có tương tác, vật thể bị che khuất một phần, đối tượng di chuyển nhanh qua vùng cấm mà chưa đủ thời lượng duy trì.
+4. **Bảo mật & Quyền riêng tư Dữ liệu:**
+   - Hoạt động hoàn toàn cục bộ (*local execution*), không gửi dữ liệu video giám sát nhạy cảm lên các dịch vụ đám mây công cộng bên ngoài.
 
-- Một camera cố định, video đã ghi; không yêu cầu streaming/realtime.
-- Một dataset HOI chính và một tập video luật nội bộ có đối chứng.
-- Hai đến ba luật cấm quan sát được trong một bối cảnh phòng/lab; lớp vật chốt theo dataset và detector ở tuần 2.
-- Pair window, biểu diễn temporal, video-text matching và luật zone/dwell.
-- Luật tiếng Việt theo mẫu hữu hạn; schema và prompt tiếng Anh đã kiểm tra. Demo nêu rõ giới hạn ngôn ngữ.
-- Baseline, một cải tiến chính, đánh giá và sản phẩm có bằng chứng.
+---
 
-### Tùy chọn sau khi MVP ổn định
+## 7. Kiến trúc Hệ thống & Ranh giới Mô-đun (System Architecture)
 
-Luật thứ ba, crossing ranh giới, so sánh một backbone video-language khác, tăng tốc suy luận. Bỏ các hạng mục này trước khi ảnh hưởng báo cáo hoặc deadline.
-
-### Ngoài phạm vi mặc định
-
-Full dynamic scene graph/GNN, full cross-attention transformer, huấn luyện detector/foundation model mới, đa camera, định danh cá nhân/phân quyền, ngôn ngữ tùy ý, PPE vắng mặt, tự động ra quyết định kỷ luật, ứng dụng production/mobile và bảo đảm realtime.
-
-| Luật minh họa | Điều kiện vi phạm | Âm tính khó |
-|---|---|---|
-| Cấm cầm vật X trong vùng A | Cầm X đủ tin cậy + đúng vùng + đủ thời lượng | Đi gần X không cầm; cầm X ngoài A |
-| Cấm cầm vật Y trong vùng B | Cầm Y đủ tin cậy + đúng vùng + đủ thời lượng | Vật Y đứng yên trong B; người vào B không cầm Y |
-| Cấm mang vật Y vào vùng B, tùy chọn | Mang Y + ngoài → trong B + đủ bằng chứng temporal | Vật đứng yên trong B; người vào B không mang Y |
-
-“Cầm” và “mang” không mặc định cùng nhãn. Nếu dataset không có nhãn/chuỗi để phân biệt, giới hạn demo theo nhãn có bằng chứng. Crossing cần state qua thời gian, không thay bằng membership của một frame.
-
-## 5. Yêu cầu chức năng
-
-| ID | Yêu cầu | Tiêu chí nghiệm thu |
-|---|---|---|
-| FR01 | Nhận video, kiểm tra metadata | Đọc được frame/timestamp; file hỏng/không hỗ trợ có lỗi rõ, không tạo kết quả giả |
-| FR02 | Luật mẫu | Có ID, type, subject, action, object, zone, duration; câu không hỗ trợ bị từ chối hoặc yêu cầu sửa |
-| FR03 | Khai báo vùng | Polygon chuẩn hóa theo khung hình; báo polygon không hợp lệ; tái lập zone decision |
-| FR04 | Detection/tracking | Có person/object box, track ID và confidence; ID không được coi là danh tính thật |
-| FR05 | Pair window | Đúng track/timestamp; valid mask cho thiếu quan sát; giới hạn cặp bằng quy tắc cấu hình |
-| FR06 | Baseline/cải tiến | Cùng input/tiền xử lý, ghi model/config version; không so hai split khác nhau |
-| FR07 | Matching | Hiển thị similarity đúng loại; không gọi cosine là xác suất; cache text theo prompt/model |
-| FR08 | Event | Xét rule/zone/dwell; deduplicate theo người–vật–luật; lưu start/end/emitted timestamp |
-| FR09 | Thiếu bằng chứng | Track mất/che khuất quá giới hạn có trạng thái insufficient_evidence; không thành negative chắc chắn |
-| FR10 | Bằng chứng | Event có box/ID, rule, thời gian và clip/ảnh; xem đúng thời điểm |
-| FR11 | Export | JSON/CSV đúng schema, khớp UI; không có event vẫn xuất kết quả rỗng hợp lệ |
-| FR12 | Nhật ký thí nghiệm | Lưu run ID, config, seed, commit, split/weight hash, metric và predictions |
-
-Giới hạn đầu vào đề xuất để pilot: MP4 H.264 hoặc video mẫu đã kiểm thử, khoảng tối đa 2 phút/video ở 720p. Chốt lại theo pilot; chưa cam kết thời gian xử lý.
-
-## 6. Yêu cầu chất lượng
-
-- **Tái lập:** dependency khóa bằng uv.lock; code/config không hardcode đường dẫn máy cá nhân; ghi seed/data version.
-- **Hiệu năng:** đo wall time/video, latency/clip và peak VRAM trên cấu hình cụ thể. Chỉ nói realtime sau khi tính cả đợi window và xử lý.
-- **Ổn định:** thử video hỏng, không người, ngoài vùng, nhiều cặp, che khuất; không crash hoặc bỏ lỗi im lặng.
-- **Giải thích:** dùng bbox, luật, score và đoạn bằng chứng; attention map không thay metric grounding.
-- **Dữ liệu:** dùng video có quyền sử dụng và dữ liệu dàn dựng có đồng thuận; demo local, không cần gửi video cho dịch vụ ngoài.
-- **Bàn giao:** cài từ README trên môi trường sạch, chạy bộ mẫu, có backup ngoại tuyến.
-
-## 7. Kiến trúc và ranh giới mô-đun
+Hệ thống được tổ chức thành 3 tầng chức năng độc lập:
 
 ```text
-Video -> detector/tracker -> pair windows -> union crop CLIP + geometry/motion
-      -> mean pooling (B1) hoặc temporal adapter (P) -> video projection
-Luật mẫu -> schema -> prompt hành vi -> CLIP text -> matching
-Schema + polygon + matching -> logic vi phạm -> smoothing/event -> demo/export
+[Video Input] ──> [Tầng 1: Perception & Tracking] ──> [Pair Windows & Tubelets]
+                                                               │
+                                                               ▼
+[Text Rules]  ──> [Module NLP: Rule Parser]        [Tầng 2: Spatio-Temporal HOI]
+                           │                                   │
+                           ▼                                   ▼
+                   [Z_text Vector]                    [Z_video Vector]
+                           │                                   │
+                           └───────────────┬───────────────────┘
+                                           ▼
+                    [Tầng 3: Cross-Modal Alignment & Matching]
+                                           │
+                                           ▼
+                               [Matching Similarity]
+                                           │
+                       [Spatial Polygon ROI + Min Dwell Time]
+                                           │
+                                           ▼
+                    [Sự kiện Vi phạm có Bằng chứng Grounding]
 ```
 
-Detector và CLIP đóng băng; học temporal adapter và projection nhỏ. CLIP image/text đã pretrained alignment; bổ sung temporal/geometry cần kiểm chứng alignment lại. L2 normalization không thay thế học ngữ nghĩa.
+### Chi tiết các phân hệ:
+- **Phân hệ Thị giác (Vision Subsystem):** Đóng gói trong `temporal_hoi.data`. Thực hiện giải mã video, lấy mẫu đồng đều $T$ khung hình, trích xuất đặc trưng ngoại hình và chuyển động.
+- **Phân hệ Ngôn ngữ (Language Subsystem):** Tiếp nhận quy tắc, phân tích cú pháp thành schema chuẩn, sử dụng Text Encoder tiền huấn luyện để trích xuất vector ngữ nghĩa.
+- **Phân hệ So khớp & Quyết định (Matching & Grounded Decision Subsystem):** Đóng gói trong `temporal_hoi.evaluation` và pipeline suy luận. Ánh xạ vector embedding, tính điểm tương đồng, kiểm tra điều kiện không–thời gian và phát sinh cảnh báo có bằng chứng.
 
-Tầng 2 MVP là pair encoder; không gọi graph model khi chưa định nghĩa node/edge và message passing. Graph/GNN thuộc hướng mở rộng.
+---
 
-UI và CLI gọi chung `InferencePipeline`. Training/evaluation không phụ thuộc UI. Evaluator đọc predictions theo schema; notebook dùng khảo sát. Stack nền là Python 3.12, PyTorch/torchvision, OpenCLIP, OpenCV, NumPy/pandas, YAML/Pydantic, scikit-learn/matplotlib và Gradio. Detector/tracker chưa chốt; ghi weight/license/version trước tích hợp.
+## 8. Mô hình Dữ liệu & Cấu trúc Siêu dữ liệu (Data Schemas)
 
-## 8. Dữ liệu và schema
+Dữ liệu được tổ chức chuẩn hóa trong thư mục `data/manifests/` với các thực thể chính:
 
-Ưu tiên VidHOI, kiểm tra tải/lớp trong tuần 2. Action Genome là dự phòng, có nhãn tại frame lấy mẫu; không giả định có tubelet liên tục. Chỉ triển khai một adapter chính trong 10 tuần.
-
-Mục tiêu nguồn lực: pilot 20 clip; subset HOI 300–600 clip nếu đủ điều kiện; benchmark luật khoảng 60 clip/3 luật, có thể giảm 40 clip/2 luật. Đây là số mục tiêu, phải báo số thực tế. Thêm khoảng 20 phút video bình thường liên tục cho false alarms/giờ.
-
-Split theo video gốc/phiên quay; từng luật có positive/negative ở validation/test. Caption mẫu từ label không phải benchmark ngôn ngữ tự do. Nhãn cùng đúng là multi-positive; nhãn thiếu không mặc định negative. Kiểm tra lại ít nhất 20% annotation, ghi rõ kiểm tra độc lập hay self-review.
-
-| Record | Trường tối thiểu |
-|---|---|
-| VideoManifest | video_id, source_id, session_id, path, duration_s, fps, split, annotation_version, checksum |
-| PairWindow | pair_id, person_track_id, object_track_id, timestamps_s, appearance, geometry, valid_mask |
-| Rule | rule_id, text_vi, rule_type, action, object, zone_id, behavior_prompt_en, min_duration_s, threshold_ref |
-| Event | event_id, video_id, person/object IDs, rule_id, start_s, end_s, emitted_at_s, score, evidence_path, evidence_status |
-| RunMetadata | run_id, model_id, track_mode, commit, config_hash, split_hash, weight_hash, seed, package_versions |
-
-Rule crossing thêm hướng chuyển trạng thái. Zone chứa polygon, hệ tọa độ và điểm neo. Box khai báo xyxy/xywh và pixel/normalized. Track ID chỉ có nghĩa trong video/run; không so ID số học trực tiếp giữa GT và predicted tracks.
-
-## 9. Thực nghiệm và metric
-
-| Cấu hình | Vai trò |
-|---|---|
-| B0: CLIP toàn cảnh + mean pooling | Mốc đơn giản, ảnh hưởng nền |
-| B1: union crop + mean pooling + projection học | Baseline trực tiếp |
-| A1: B1 + temporal attention, không geometry | Lợi ích thời gian |
-| A2: geometry + mean pooling | Lợi ích geometry/motion |
-| P: geometry + temporal attention + projection | Phương pháp đề xuất |
-
-B1/A1/A2/P cùng backbone, split, số frame, prompt, loss và ngân sách chọn siêu tham số; báo số tham số trainable. Mục tiêu 3 seed cho B1/P nếu pilot cho phép; công bố số seed thực chạy. Temporal shuffle là phép kiểm tra phụ. Zone/smoothing đánh giá riêng trên cùng model để không gán lợi ích hậu xử lý cho encoder.
-
-Metric HOI: macro-AP đa nhãn trên lớp đã khóa, thêm micro-AP/Recall@K với candidate set và positive mask rõ ràng. Nhãn chưa đầy đủ cần tập đánh giá có nhãn tin cậy hoặc protocol phù hợp chốt trước test.
-
-Metric event: precision/recall/F1 với one-to-one matching cùng video/rule và temporal IoU ≥ 0.5; duplicate event là FP. Đánh giá “ai” cần ghép track theo overlap; báo riêng temporal-only và temporal+spatial với IoU ≥ 0.5 trên frame có nhãn. Báo false alarms/giờ video bình thường, trễ từ GT onset tới lúc phát cảnh báo, latency/VRAM trên máy thật.
-
-Chốt ngưỡng, dwell, smoothing, checkpoint/seed trên validation. Tách oracle khỏi predicted tracks. Test cuối tuần 8, không tuning lại trên test; nêu giới hạn mẫu/camera/lớp và kết quả âm.
-
-## 10. Mốc và sản phẩm bàn giao
-
-| Mốc | Điều kiện thoát |
-|---|---|
-| Tuần 2 | Môi trường, dữ liệu pilot, lớp/luật, split và protocol |
-| Tuần 3 | B0/B1 và evaluator có validation tái lập |
-| Tuần 4 | Perception, geometry, dữ liệu demo và UI khung |
-| Tuần 5–6 | Cải tiến, ablation, ca lỗi; khóa kiến trúc cuối tuần 6 |
-| Tuần 7 | Pipeline luật/event/demo và threshold validation |
-| Tuần 8 | Test cuối, demo đầu-cuối, báo cáo nháp toàn bộ |
-| Tuần 9 | Môi trường sạch, sửa báo cáo, slide và diễn tập |
-| Tuần 10 | Nộp repo, báo cáo, slide, demo/backup và gói tái lập trước 22/11 |
-
-Mỗi tuần 15 giờ chính, 3 giờ báo cáo/gặp thầy, 2 giờ dự phòng. Tuần 1 đã qua cần đối chiếu; 200 giờ là quỹ cả kỳ, không phải quỹ còn lại. Lịch chi tiết: [plan.md](../plan.md) và [Excel](Ke_hoach_do_an_10_tuan.xlsx).
-
-## 11. Rủi ro và quyết định còn mở
-
-| Vấn đề | Xử lý | Hạn chốt |
+| Thực thể | File lưu trữ | Các trường dữ liệu cốt lõi |
 |---|---|---|
-| Dataset/weight không truy cập | Pilot sớm, đổi dữ liệu sau tối đa 2 ngày bị chặn | Tuần 2 |
-| Luật không khớp dữ liệu/detector | Giảm luật, chọn vật lớn/hành vi có nhãn | Tuần 2–4 |
-| Thiếu GPU/thời gian | Feature cache, subset nhỏ, T=8; bỏ backbone phụ | Sau pilot tuần 2 |
-| Không cải thiện | Kiểm tra loss/data, công bố kết quả âm và ablation | Tuần 6 |
-| Tracking kém | Tách oracle/predicted, ghi ca lỗi, giới hạn cảnh | Tuần 4–8 |
-| Scope tăng/trễ báo cáo | Cắt realtime/luật phụ/UI phụ; khóa tính năng | Rà mỗi tuần |
+| **Video Clip** | `clips.csv` | `clip_id`, `video_id`, `camera_id`, `resolution`, `fps`, `start_s`, `end_s`, `behavior_label`, `has_violation` |
+| **Quy tắc Văn bản** | `texts.csv` | `text_id`, `text_en`, `text_vi`, `subject`, `action`, `object`, `zone_type`, `is_violation_rule` |
+| **Phân chia Tập** | `splits.csv` | `clip_id`, `session_id`, `split` (`dev` hoặc `extension`) |
+| **Tương quan Clip–Text** | `relevance.csv` | `clip_id`, `text_id`, `relevance` (`1` là phù hợp, `0` là không phù hợp, rỗng là chưa xác định) |
+| **Nguồn gốc & Bản quyền** | `sources.csv` | `source_id`, `clip_id`, `license`, `provenance_url`, `sha256_checksum` |
 
-Còn cần chốt: dataset/subset; lớp/luật; detector/weight/license; GPU và ngân sách; ngày báo cáo theo lịch thầy; mẫu báo cáo trường. Không chọn mọi framework trước pilot.
+---
 
-## 12. Tiền đề thạc sĩ và nguồn
+## 9. Tiêu chuẩn Đánh giá & Độ đo Nghiên cứu (Evaluation Standards)
 
-Giữ data adapter, manifest/split, protocol, baseline, run registry và ca lỗi. Có thể chọn một hướng thạc sĩ: dynamic graph đa đối tượng, fine-grained grounding, compositional generalization của luật, uncertainty cho điều kiện vắng mặt hoặc domain adaptation qua camera. Chọn theo bằng chứng cử nhân; không đưa tất cả vào MVP.
+### 9.1. Bài toán So khớp Video–Văn bản (Video–Text Matching)
+Đánh giá năng lực của không gian biểu diễn đa phương thức trong việc liên kết đúng hành vi video với mô tả văn bản tương ứng:
+- **Multi-positive Recall@K ($K=1, 3, 5$):** Tỷ lệ các câu truy vấn đúng được xếp hạng trong top-$K$ kết quả trả về khi một clip có thể khớp với nhiều câu mô tả hợp lệ.
+- **Pairwise Accuracy:** Tỷ lệ các cặp (Clip, Text Đúng) có điểm số tương đồng cao hơn cặp đối chứng (Clip, Text Sai).
+- **Mean Reciprocal Rank (MRR):** Giá trị nghịch đảo thứ hạng trung bình của kết quả đúng đầu tiên.
 
-Nguồn định hướng: tài liệu khảo sát và nhận xét nội dung ban đầu, [plan.md](../plan.md). Nguồn kỹ thuật: [CLIP](https://github.com/openai/CLIP), [OpenCLIP](https://github.com/mlfoundations/open_clip), [CLIP4Clip](https://github.com/ArrowLuo/CLIP4Clip), [VidHOI](https://github.com/coldmanck/VidHOI), [Action Genome](https://github.com/JingweiJ/ActionGenome). Số giờ, kích thước tập và mục tiêu tăng metric là đề xuất kế hoạch, không phải kết quả các công trình này.
+### 9.2. Bài toán Phát hiện Sự kiện Vi phạm Thời gian (Temporal Event Detection)
+Đánh giá năng lực phát hiện chính xác thời điểm và loại vi phạm diễn ra trong video:
+- **Temporal IoU (tIoU):** Đo lường mức độ trùng khớp giữa khoảng thời gian dự đoán $[t_{\text{pred\_start}}, t_{\text{pred\_end}}]$ và khoảng thời gian thực tế $[t_{\text{gt\_start}}, t_{\text{gt\_end}}]$:
+  $$\text{tIoU} = \frac{|I_{\text{pred}} \cap I_{\text{gt}}|}{|I_{\text{pred}} \cup I_{\text{gt}}|}$$
+- **Greedy Bipartite Matching (Ngưỡng $\text{tIoU} \ge 0.5$):** Khớp 1-to-1 giữa sự kiện dự đoán và nhãn thực tế cùng loại luật. Các dự đoán lặp lại (duplicate predictions) hoặc ngoài khoảng vi phạm bị phạt là False Positive (FP).
+- **Event-Precision, Event-Recall, Event-F1:** Đánh giá mức độ chính xác và độ bao phủ của các sự kiện phát hiện được.
+- **False Alarms / Hour (Tỷ lệ báo động giả mỗi giờ):** Số lượng cảnh báo sai phát sinh trên các đoạn video hoạt động bình thường, đo lường độ tin cậy thực tế của hệ thống.
+
+---
+
+## 10. Rủi ro Kỹ thuật & Biện pháp Giảm thiểu (Technical Risks & Mitigations)
+
+| Rủi ro Kỹ thuật | Khả năng | Tác động | Biện pháp Giảm thiểu |
+|---|---|---|---|
+| **Khoảng cách Ngữ nghĩa (Cross-Modal Gap):** Vector video và vector text không căn chỉnh tốt khi chỉ dùng mô hình zero-shot tĩnh | Trung bình | Cao | Thử nghiệm lớp chiếu adapter nhẹ; kết hợp thêm đặc trưng hình học chuyển động để bổ trợ cho đặc trưng ngoại hình |
+| **Nhiễu từ Bám vết Đối tượng (Tracking Failures):** Track ID bị đứt gãy hoặc nhảy vệt do che khuất | Cao | Trung bình | Tách biệt đánh giá trên quỹ đạo chuẩn (Oracle Tracks) và quỹ đạo dự đoán (Predicted Tracks); ghi nhận trạng thái `insufficient_evidence` |
+| **Báo động giả do Ngưỡng nhạy cảm:** Báo vi phạm ngay khi đối tượng chỉ vừa đi lướt qua vùng cấm | Trung bình | Cao | Áp dụng cơ chế làm mịn thời gian (Temporal Dwell Smoothing) với ngưỡng thời lượng tối thiểu bắt buộc |
+| **Rò rỉ Dữ liệu (Data Leakage):** Trùng lặp bối cảnh/phiên quay giữa tập phát triển và tập đánh giá | Thấp | Cao | Khóa chặt giao thức phân chia split theo `session_id` và `camera_id` gốc trong `splits.csv` |
+
+---
+
+## 11. Hướng phát triển Mở rộng (Future Extensions)
+
+- **Mô hình Đồ thị Tương tác Động (Dynamic HOI Scene Graphs):** Mở rộng từ mô hình hóa cặp đơn lẻ sang đồ thị tương tác đa người – đa vật thể theo thời gian.
+- **Căn chỉnh Không gian–Thời gian Mịn (Fine-Grained Spatio-Temporal Grounding):** Định vị chính xác vùng hộp bao của hành vi vi phạm ở cấp độ pixel-level hoặc spatial attention maps.
+- **Tổng quát hóa Cấu trúc Luật (Compositional Rule Generalization):** Hỗ trợ các quy tắc an toàn có cấu trúc logic phức tạp hơn (điều kiện phủ định, logic kết hợp AND/OR giữa nhiều hành động).
