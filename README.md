@@ -1,75 +1,133 @@
 # Temporal HOI Video–Text Matching
 
-Nghiên cứu hai hướng: **NC1** phát hiện sự kiện vi phạm bằng hành vi + vùng + thời gian; **NC2** so khớp video–văn bản. Dùng encoder ảnh/chữ tiền huấn luyện cùng hệ, đóng băng trọng số; không train/fine-tune adapter, projection hoặc classifier.
+> **Kế hoạch hiện hành — 28/09/2026:** xem [kế hoạch 10 tuần](plan.md) và [bảng tiến độ đã cập nhật](outputs/Ke_hoach_do_an_10_tuan.xlsx). Hai hướng hiện tại là phát hiện vi phạm không train/fine-tune riêng theo hành vi và video–text matching bằng mô hình có sẵn. Mỗi tuần một báo cáo tổng hợp, nộp thứ Sáu. Các sơ đồ temporal adapter/alignment có học ở phần dưới là thiết kế trước khi đổi phạm vi, không phải yêu cầu triển khai của lịch mới; hướng dẫn cài môi trường vẫn dùng được.
 
-Phạm vi hiện hành: [kế hoạch 10 tuần](plan.md). Đỗ xe và đổ rác là hai hành vi chính; đi xe đạp là hành vi mở rộng. Các thiết kế có huấn luyện trong [PRD cũ](docs/prd.md) chỉ là bối cảnh lịch sử.
+> **Hệ thống nhận biết tương tác người–vật theo thời gian và so khớp video–văn bản phục vụ phát hiện vi phạm quy định.**
 
-## Trạng thái đã kiểm chứng ngày 30/09/2026
+[![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](https://www.python.org/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.6%2B-orange.svg)](https://pytorch.org/)
+[![OpenCLIP](https://img.shields.io/badge/OpenCLIP-2.30%2B-green.svg)](https://github.com/mlfoundations/open_clip)
+[![Package Manager](https://img.shields.io/badge/uv-managed-purple.svg)](https://docs.astral.sh/uv/)
 
-- **W01:** smoke test OpenCLIP chạy lại thành công với 8 hình và 4 cosine hữu hạn. Đây là kiểm tra kỹ thuật trên video mẫu, chưa đo chất lượng phát hiện hành vi.
-- **W02 theo yêu cầu máy cá nhân:** dùng 8 đoạn/5 video hiện có (22,63 MiB), 6 dev +2 demo mở rộng. Không tải thêm video; bỏ chỉ tiêu 80/120. Bộ đọc và nhãn mô tả mẫu đã kiểm tra; chưa có dữ liệu đủ bằng chứng để chấm vi phạm hai hành vi.
-- Bộ chấm và bộ đọc đã sửa lỗi, có kiểm thử hồi quy. Đã sửa nhãn theo ảnh rà, thêm nguồn/quyền dùng và bảng relevance; ghi rõ AI rà ảnh mẫu, không là người chấm độc lập. Nhãn vi phạm chưa đủ bằng chứng giữ null.
-- Báo cáo hiện hành: [tuần 01](reports/weekly/week_01.md), [tuần 02](reports/weekly/week_02.md). Chưa có chứng cứ nộp báo cáo; các bản trong docs/reports được giữ để truy vết.
+---
 
-## Cài đặt và kiểm tra
+## 1. Giới thiệu tổng quan (Overview)
 
-Python 3.12, môi trường CPU theo uv.lock:
+Trong các hệ thống giám sát an ninh và an toàn lao động, việc phát hiện hành vi vi phạm truyền thống thường dựa trên các bộ phân loại đóng (closed-set classification) với các lớp hành vi định sẵn, gây hạn chế khi cần mở rộng hoặc thay đổi quy định.
+
+Dự án **Temporal HOI Video–Text Matching** nghiên cứu giải pháp phát hiện sự kiện vi phạm linh hoạt bằng cách kết hợp giữa **mô hình hóa tương tác người–vật thể theo thời gian (Spatio-Temporal HOI)** và **so khớp video–văn bản (Video–Text Matching)**. Hệ thống cho phép người dùng định nghĩa quy tắc an toàn bằng văn bản tự nhiên theo mẫu có kiểm soát, nhận diện chuỗi tương tác trong video, đồng thời kiểm tra các điều kiện không gian (vùng quy định) và thời gian (thời lượng duy trì) để đưa ra quyết định cảnh báo kèm bằng chứng trực quan.
+
+### Điểm nổi bật
+- **Mô hình hóa tương tác không-thời gian (Spatio-Temporal HOI):** Nắm bắt mối tương quan động giữa người và vật thể (quỹ đạo, khoảng cách tương đối, vận tốc) qua chuỗi khung hình thay vì chỉ nhận diện các vật thể tĩnh đơn lẻ.
+- **So khớp đa phương thức (Cross-Modal Matching):** Căn chỉnh không gian biểu diễn giữa chuỗi hành vi video ($Z_{\text{action}}$) và mô tả quy định bằng văn bản ($Z_{\text{text}}$) thông qua kỹ thuật Contrastive Alignment.
+- **Suy luận vi phạm có căn cứ (Grounded Decision):** Phân định rạch ròi giữa việc *nhận biết hành vi* (Action Understanding) và *quyết định vi phạm* (Rule/Zone/Time Logic), giúp hạn chế báo động giả (False Alarms) và cung cấp bounding box, track ID, timestamp cùng video bằng chứng.
+
+---
+
+## 2. Kiến trúc Pipeline (System Pipeline)
+
+Hệ thống được thiết kế theo luồng xử lý 3 tầng kết hợp hai nhánh thu nhận thông tin (Thị giác và Ngôn ngữ):
+
+```mermaid
+flowchart TD
+    subgraph VisionBranch["Nhánh Thị Giác (Vision Pipeline)"]
+        V["Video Input"] --> P["Tầng 1: Perception & Tracking<br/>Detector & Tracker"]
+        P --> H["Ghép cặp Người - Vật<br/>Pair Windows & Tubelets"]
+        H --> F["Tầng 2: Spatio-Temporal HOI<br/>Union Crop + Geometry/Motion"]
+        F --> T["Temporal Attention / Adapter"]
+        T --> ZV["Vector Hành vi Z_action"]
+    end
+
+    subgraph LanguageBranch["Nhánh Ngôn Ngữ (Language Pipeline)"]
+        R["Quy định / Luật Văn Bản"] --> NLP["Module NLP: Phân rã Schema Luật<br/>Subject - Action - Object - Zone"]
+        NLP --> TE["Text Encoder<br/>CLIP Text Backbone"]
+        TE --> ZT["Vector Văn bản Z_text"]
+    end
+
+    subgraph DecisionBranch["Tầng 3: Alignment, Matching & Quyết Định"]
+        ZV & ZT --> AL["Multimodal Alignment<br/>Chiếu vào Shared Semantic Space"]
+        AL --> M["Matching Similarity"]
+        M --> D["Logic Vi Phạm & Lọc Không-Thời Gian<br/>Spatial Zone Polygon + Temporal Smoothing"]
+        NLP -.->|Thông tin Vùng & Điều kiện| D
+        D --> OUT["Sự Kiện Vi Phạm & Bằng Chứng<br/>(Track ID, Luật, Timestamp, Clip Bằng chứng)"]
+    end
+```
+
+### Chi tiết các tầng xử lý:
+
+1. **Tầng 1 – Perception & Tracking:**
+   - Tiếp nhận luồng video giám sát.
+   - Phát hiện vị trí (Bounding Box) của Người và Vật thể trong từng khung hình.
+   - Bám vết đa đối tượng (Multi-Object Tracking) để duy trì định danh và thiết lập chuỗi quỹ đạo (tubelets) liên tục qua thời gian.
+
+2. **Tầng 2 – Spatio-Temporal HOI Modeling:**
+   - Liên kết các cặp đối tượng tiềm năng (Người – Vật) trong cửa sổ thời gian (Pair Windows).
+   - Trích xuất đặc trưng ngoại hình (Appearance Feature) qua vùng hộp bao kết hợp (Union Box) sử dụng backbone thị giác (như CLIP Vision).
+   - Tích hợp đặc trưng hình học và chuyển động (Geometry & Motion Trajectory: tọa độ tương đối, khoảng cách, vector vận tốc).
+   - Sử dụng cơ chế nén thời gian (Temporal Attention / Temporal Adapter) để tổng hợp chuỗi khung hình thành vector đại diện hành vi $Z_{\text{action}}$.
+
+3. **Module NLP – Rule Decomposition & Text Encoding:**
+   - Tiếp nhận câu quy tắc an toàn bằng ngôn ngữ tự nhiên theo mẫu chuẩn hóa.
+   - Phân rã cấu trúc logic thành tuple: `<Subject, Action, Object, Zone, Condition>`.
+   - Chuẩn hóa mô tả hành vi và đưa qua Text Encoder (như CLIP Text) để thu được vector đặc trưng văn bản $Z_{\text{text}}$.
+
+4. **Tầng 3 – Cross-Modal Alignment, Matching & Grounded Decision:**
+   - **Multimodal Alignment:** Sử dụng lớp chiếu (Projection Layer) hoặc Contrastive Learning để đưa $Z_{\text{action}}$ và $Z_{\text{text}}$ về cùng không gian ngữ nghĩa chung (Shared Semantic Space).
+   - **Matching:** Tính toán điểm tương đồng ngữ nghĩa giữa hành vi quan sát được và nội dung quy định.
+   - **Spatial-Temporal Logic:** Kết hợp kiểm tra vùng không gian (Polygon ROI) và thời lượng tối thiểu (Min Dwell Time / Temporal Smoothing) để đưa ra kết luận vi phạm chính xác: *Ai vi phạm (BBox/Track ID), Vi phạm gì (Rule), Ở đâu (Zone), Khi nào (Timestamp) kèm đoạn video bằng chứng (Evidence Grounding)*.
+
+---
+
+## 3. Cấu trúc thư mục (Repository Structure)
+
+```text
+├── docs/                      # Tài liệu kỹ thuật, PRD và báo cáo nghiên cứu
+│   ├── prd.md                 # Product Requirement Document & đặc tả chi tiết
+│   ├── plan.md                # Kế hoạch chi tiết và tiến trình triển khai
+│   └── report/                # Các báo cáo tiến độ định kỳ
+├── scripts/                   # Scripts kiểm tra môi trường, xử lý dữ liệu và utility
+│   └── check_environment.py   # Kiểm tra tính toàn vẹn của môi trường và dependency
+├── src/                       # Mã nguồn chính của dự án
+│   └── temporal_hoi/          # Package triển khai pipeline xử lý
+├── pyproject.toml             # Khai báo cấu hình dự án và dependencies (chuẩn PEP 621)
+├── uv.lock                    # Khóa phiên bản dependencies đảm bảo tính tái lập
+└── README.md                  # Tài liệu giới thiệu tổng quan dự án
+```
+
+---
+
+## 4. Cài đặt & Bắt đầu nhanh (Quickstart)
+
+Dự án sử dụng **Python 3.12** và trình quản lý gói [**uv**](https://docs.astral.sh/uv/) để đảm bảo tính tái lập trên mọi môi trường.
+
+### Yêu cầu tiên quyết
+- Python 3.12
+- Cài đặt `uv` (nếu chưa có):
+  ```powershell
+  powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+  ```
+
+### Cài đặt môi trường
 
 ```powershell
+# 1. Đồng bộ môi trường ảo theo file uv.lock (bao gồm cả nhóm dev)
 uv sync --locked --group dev
+
+# 2. Kiểm tra tính toàn vẹn của môi trường (PyTorch, TorchVision NMS, CLIP, OpenCV, v.v.)
 uv run --frozen python scripts/check_environment.py
-uv run --frozen python -m pytest -q
+
+# 3. Kiểm tra định dạng và quy tắc code
 uv run --frozen ruff check .
 ```
 
-Chạy từ thư mục gốc dự án:
+*Lưu ý: Môi trường mặc định được cấu hình với PyTorch CPU phục vụ phát triển mã nguồn cục bộ. Khi chuyển sang máy huấn luyện GPU chuyên dụng, cấu hình nguồn PyTorch CUDA sẽ được thiết lập theo hướng dẫn trong [PRD](docs/prd.md).*
 
-```powershell
-uv run --frozen python scripts/smoke_test.py --output-dir outputs/w01/review_run
-uv run --frozen python scripts/test_dataloader.py
-uv run --frozen python scripts/audit_data.py
-```
+---
 
-Smoke test cần data/sample/smoke_sample.mp4 và checkpoint ViT-B-32 / laion2b_s34b_b79k (lần đầu có thể cần tải). Video và trọng số không được commit. Script download_samples.py tải các video mẫu khác phục vụ bộ đọc; không cung cấp tập benchmark đã nghiệm thu hoặc nhãn đã duyệt.
+## 5. Tài liệu liên quan (References)
 
-Bộ benchmark đọc 6 clip dev lần lượt, cạnh hình tối đa 320 px, không import PyTorch khi chỉ đọc ảnh. Cấu hình configs/w02_lightweight.json giới hạn dữ liệu thô 50 MiB. Audit trả PASS_TECHNICAL_PILOT khi bộ mẫu đạt kiểm tra, còn research_status báo riêng khả năng đánh giá vi phạm thật.
+- **[Product Requirements Document (PRD)](docs/prd.md)**: Chi tiết yêu cầu kỹ thuật, phạm vi MVP, schema dữ liệu và tiêu chí nghiệm thu.
+- **[Kế hoạch triển khai (plan.md)](plan.md)**: Lộ trình và kiến trúc triển khai từng giai đoạn.
+- **[Thư mục Báo cáo hàng tuần (Link Google Drive)](https://drive.google.com/drive/folders/1gzjTKl1uKl0Vh60P39wmgpQdl2FZudV1?hl=vi)**: Thư mục lưu trữ tài liệu, slide và các bản báo cáo tiến độ hàng tuần.
 
-## Quy ước dữ liệu và phép đo
 
-- Dataset kiểm tra khóa clip duy nhất, đầy đủ split và không trùng session/video giữa các tập.
-- texts.csv là mẫu prompt theo hành vi, **không phải nhãn đúng cho từng clip**. Bảng data/manifests/relevance.csv hiện chứa 80 cặp nhãn cho 8 clip/10 câu. Truyền relevance_csv để nạp; thiếu nhãn giữ unknown.
-- VideoReader lấy 8 hình khác nhau trong [start,end), kiểm tra timestamp decoder. Video lỗi/thiếu hình/ngoài khoảng báo lỗi; không chèn ảnh đen. Hỗ trợ CFR, cần chuyển VFR sang CFR trước dùng.
-- Sự kiện bắt buộc có video_id, rule_id, start_s, end_s; score tùy chọn. Ghép một–một cùng video/luật, tIoU ≥0,5; dự đoán trùng tính FP.
-- Mẫu số 0 trả None/null. Pairwise dùng đúng > sai (hòa không thắng). FA/giờ cần số cảnh báo riêng trên video bình thường và thời lượng thật.
-- Test chính khóa đến tuần 8; mẫu test đã xem trong quá trình dựng bộ đọc không được coi là test chính chưa từng mở.
-
-## Tổ chức
-
-| Thư mục | Nội dung |
-|---|---|
-| src/temporal_hoi/data/ | Đọc video và danh mục |
-| src/temporal_hoi/evaluation/ | Chấm matching và sự kiện |
-| tests/ | Ví dụ tính tay, lỗi biên, chống rò rỉ |
-| data/manifests/ | Clip, prompt mẫu, split và trạng thái nhãn |
-| scripts/ | Chạy mẫu, benchmark, audit |
-| outputs/w01/, outputs/w02/ | Bằng chứng máy |
-| reports/weekly/ | Một báo cáo hiện hành mỗi tuần |
-
-[CLIP](https://github.com/openai/CLIP), [OpenCLIP](https://github.com/mlfoundations/open_clip), [CLIP4Clip](https://github.com/ArrowLuo/CLIP4Clip) là nguồn khảo sát; báo cáo tuần 01 giải thích lựa chọn và giới hạn.
-
-## Dùng bộ mẫu nhỏ
-
-```python
-from temporal_hoi.data.dataset import TemporalHOIDataset
-
-dataset = TemporalHOIDataset(
-    split="dev",
-    relevance_csv="data/manifests/relevance.csv",
-    max_frame_side=320,
-)
-for item in dataset:
-    # Chỉ giữ một item/lần; chưa có nhãn vi phạm thì has_violation là None.
-    print(item["clip_id"], len(item["pil_frames"]), item["has_violation"])
-```
-
-Bản manifest trước rà giữ trong data/manifests/archive/pre_lightweight/. Ảnh rà và hash nguồn tại outputs/w02/review/. Bộ hiện tại đã xem nên không gọi là test mù; không sử dụng clip đường cao tốc để giả làm người đổ rác.
