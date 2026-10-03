@@ -3,7 +3,7 @@
 > Nghiên cứu Zero-shot / Open-vocabulary Human-Object Interaction (HOI) Detection và học căn chỉnh Video–Văn bản trong không gian ngữ nghĩa chung.
 
 **Sinh viên thực hiện:** Ngô Hoàng Phú  
-**Tài liệu kỹ thuật:** [PRD](docs/prd.md) · [Giao thức thực nghiệm (Protocols)](docs/protocols/)
+**Tài liệu & Báo cáo:** [PRD](docs/prd.md) · [Giao thức thực nghiệm (Protocols)](docs/protocols/) · [Báo cáo hàng tuần (Google Drive)](https://drive.google.com/drive/folders/1gzjTKl1uKl0Vh60P39wmgpQdl2FZudV1?hl=vi)
 
 ---
 
