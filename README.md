@@ -27,31 +27,31 @@ Hệ thống xử lý luồng dữ liệu đa phương thức qua các tầng:
 
 ```mermaid
 flowchart LR
-    subgraph Input [Đầu vào]
-        V[Video thô]
-        T[Câu mô tả / Nhãn tương tác]
+    subgraph Input ["Đầu vào"]
+        V["Video thô"]
+        T["Câu mô tả / Nhãn tương tác"]
     end
 
-    subgraph M1 [Mô-đun 1: Temporal HOI]
-        VR[VideoReader / Dataloader]
-        HD[Phát hiện Bounding Box Người/Vật]
-        HA[Nhận diện tương tác theo thời gian]
+    subgraph M1 ["Mô-đun 1: Temporal HOI"]
+        VR["VideoReader / Dataloader"]
+        HD["Phát hiện Bounding Box Người/Vật"]
+        HA["Nhận diện tương tác theo thời gian"]
         VR --> HD --> HA
     end
 
-    subgraph M2 [Mô-đun 2: Video-Text Retrieval]
-        VE[Visual Encoder]
-        TE[Text Encoder]
-        SS[Shared Semantic Embedding Space]
-        SIM[Tính ma trận tương đồng & Xếp hạng]
+    subgraph M2 ["Mô-đun 2: Video-Text Retrieval"]
+        VE["Visual Encoder"]
+        TE["Text Encoder"]
+        SS["Shared Semantic Embedding Space"]
+        SIM["Tính ma trận tương đồng & Xếp hạng"]
         VE --> SS
         TE --> SS
         SS --> SIM
     end
 
-    subgraph Evaluation [Đánh giá chuẩn mực]
-        MAP[HOI frame-level mAP]
-        RET[Recall@K / MedR / MRR hai chiều]
+    subgraph Evaluation ["Đánh giá chuẩn mực"]
+        MAP["HOI frame-level mAP"]
+        RET["Recall@K / MedR / MRR hai chiều"]
     end
 
     V --> VR
