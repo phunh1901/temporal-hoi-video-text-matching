@@ -30,17 +30,12 @@ service-account*.json
 token.json
 .netrc
 
-# Large datasets, model weights, logs and run artifacts
-data/raw/
-data/processed/
-data/features/
+# Data (all raw datasets, processed data, manifests and annotations)
+data/
+*.csv
 checkpoints/
 weights/
-outputs/*
-!outputs/**/
-!outputs/**/*.json
-outputs/**/previews/
-outputs/**/~$*
+outputs/
 runs/
 wandb/
 mlruns/
@@ -84,8 +79,11 @@ desktop.ini
 # Reports and personal tracking (stored on Google Drive)
 docs/reports/
 reports/
+*.pdf
 plan.md
 *Ke_hoach_do_an_10_tuan*
-# Keep plans, manifests and small reviewed configs versioned.
+*.xlsx
+*.xls
+
 # AI agent instructions and rules
 .agents/

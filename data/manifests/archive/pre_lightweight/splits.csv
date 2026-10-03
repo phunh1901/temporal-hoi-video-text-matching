@@ -1,9 +1,0 @@
-clip_id,split,session_id
-clip_01_parking_viol,dev,session_01
-clip_01_parking_norm,dev,session_01
-clip_04_normal_01,dev,session_04
-clip_04_normal_02,dev,session_04
-clip_02_trash_viol,val,session_02
-clip_05_highway_parking,val,session_05
-clip_03_bike_viol,test,session_03
-clip_03_bike_norm,test,session_03

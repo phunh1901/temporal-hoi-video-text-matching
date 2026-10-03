@@ -1,2 +1,0 @@
-video_id,session_id,split,start_s,end_s,duration_s,status,eligible_for_fa_hour
-normal_surveillance,source_normal_surveillance,dev,0,48,48,pilot_background_not_independent_test,false

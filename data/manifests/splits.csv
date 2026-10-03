@@ -1,9 +1,0 @@
-clip_id,split,session_id
-parking_lot_01,dev,source_apartment_parking
-parking_lot_02,dev,source_apartment_parking
-highway_traffic_01,dev,source_trash_dumping
-indoor_walk_01,dev,source_normal_surveillance
-indoor_walk_02,dev,source_normal_surveillance
-highway_stop_01,dev,source_parking_violation
-cycling_demo_01,extension,source_bicycle_pedestrian
-walking_demo_01,extension,source_bicycle_pedestrian
