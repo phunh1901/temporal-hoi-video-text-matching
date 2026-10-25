@@ -1,0 +1,15 @@
+{
+  "schema_version": "development_head_study_v1",
+  "base_config": "configs/frozen_feature_alignment.json",
+  "union_config": "configs/hoi_union_crop.json",
+  "heads": ["linear", "mlp"],
+  "hidden_dim": 128,
+  "seeds": [42, 43, 44],
+  "probe_fixture_seed": 42,
+  "probe_steps": 3,
+  "selection_metric": "text_to_video.R@1",
+  "selection_split": "validation",
+  "hypothesis": "MLP capacity may improve frozen-feature validation retrieval relative to a learned linear head; this is a capacity control, not a novel mechanism.",
+  "rejection": "Do not claim improvement without paired real development runs on the same inputs and budget; synthetic probe metrics cannot support this hypothesis.",
+  "final_test_access": false
+}

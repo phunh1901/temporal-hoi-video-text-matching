@@ -53,7 +53,7 @@ def main():
             "https://github.com/intel-iot-devkit/sample-videos/blob/master/LICENSE",
         ),
     }
-    inventory = json.loads(Path("outputs/w02/review/sources.json").read_text())
+    inventory = json.loads(Path("outputs/experiments/pilot/data_review/review/sources.json").read_text())
     sources = {}
     for record in inventory:
         stem = Path(record["path"]).stem
@@ -242,7 +242,7 @@ def main():
                 clip_id=cid,
                 reviewer="Codex_visual_review_not_human",
                 reviewed_at="2026-09-30",
-                evidence=f"outputs/w02/review/{stem}.jpg",
+                evidence=f"outputs/experiments/pilot/data_review/review/{stem}.jpg",
                 method="source contact sheet; scene/action labels only",
                 correction=note,
                 human_reviewed="false",
@@ -271,7 +271,7 @@ def main():
     hashes = {
         p.name: __import__("hashlib").sha256(p.read_bytes()).hexdigest() for p in ROOT.glob("*.csv")
     }
-    Path("outputs/w02/pilot_manifest_lock.json").write_text(
+    Path("outputs/experiments/pilot/data_review/pilot_manifest_lock.json").write_text(
         json.dumps(
             dict(
                 profile="w02_lightweight_pilot_v1",

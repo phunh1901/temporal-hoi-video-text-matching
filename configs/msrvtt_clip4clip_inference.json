@@ -1,0 +1,21 @@
+{
+  "schema_version": "clip4clip_meanp_inference_v1",
+  "upstream_commit": "508ffa3de39ba0563a03199c440ab602a72e9b6f",
+  "metadata_archive": "data/metadata/msrvtt_data.zip",
+  "metadata_lock": "data/metadata/msrvtt_protocol_lock.json",
+  "media_root": "data/raw/msrvtt",
+  "source_root": "external/CLIP4Clip",
+  "checkpoint": null,
+  "checkpoint_sha256": null,
+  "checkpoint_provenance": null,
+  "split": "test",
+  "max_words": 32,
+  "max_frames": 12,
+  "device": "cuda",
+  "frame_batch_size": 4,
+  "threads": 2,
+  "max_rss_bytes": 8589934592,
+  "max_run_hours": 1,
+  "selection_fixed_before_scores": false,
+  "output_dir": "outputs/msrvtt_clip4clip_inference"
+}

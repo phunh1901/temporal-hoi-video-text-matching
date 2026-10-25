@@ -227,8 +227,8 @@ def build_lock(archive_path):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--archive", type=Path, default=Path("outputs/w03/sources/m2/msrvtt_data.zip"))
-    parser.add_argument("--output", type=Path, default=Path("outputs/w03/msrvtt_protocol_lock.json"))
+    parser.add_argument("--archive", type=Path, default=Path("data/metadata/msrvtt_data.zip"))
+    parser.add_argument("--output", type=Path, default=Path("data/metadata/msrvtt_protocol_lock.json"))
     args = parser.parse_args()
     lock = build_lock(args.archive)
     args.output.parent.mkdir(parents=True, exist_ok=True)

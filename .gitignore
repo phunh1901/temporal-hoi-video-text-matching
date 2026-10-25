@@ -31,7 +31,7 @@ token.json
 .netrc
 
 # Data (all raw datasets, processed data, manifests and annotations)
-data/
+/data/
 *.csv
 checkpoints/
 weights/
@@ -79,11 +79,21 @@ desktop.ini
 # Reports and personal tracking (stored on Google Drive)
 docs/reports/
 reports/
+/reports/report_checkpoints.md
 *.pdf
 plan.md
+/HUONG_DAN_TIEN_DO.md
 *Ke_hoach_do_an_10_tuan*
 *.xlsx
 *.xls
 
 # AI agent instructions and rules
 .agents/
+/AGENTS.md
+
+# Internal university regulations and guidance
+/noiquy/
+
+# Local compliance documents derived from internal guidance
+/rubric.md
+/rules.md

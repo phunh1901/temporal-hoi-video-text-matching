@@ -1,7 +1,7 @@
 # W03-04 — Đối chiếu metric với evaluator CLIP4Clip
 
 Ngày rà và thực hiện: **03/10/2026**. Mức công việc: **kiểm tra evaluator**.
-Đầu ra máy: [metric_conformance.json](../../outputs/w03/metric_conformance.json).
+Đầu ra máy: [metric_conformance.json](../../outputs/protocols/benchmark_locks/metric_conformance.json).
 
 ## 1. Phần đã có và phần mới của tuần 3
 
@@ -23,7 +23,7 @@ metric, không đo chất lượng mô hình và không dùng 8 đoạn pilot.
 - Mapping MSR-VTT: [dataloader_msrvtt_retrieval.py](https://github.com/ArrowLuo/CLIP4Clip/blob/508ffa3de39ba0563a03199c440ab602a72e9b6f/dataloaders/dataloader_msrvtt_retrieval.py), lớp `MSRVTT_DataLoader` lấy trực tiếp `video_id` và `sentence` mỗi dòng CSV.
 
 Bản mã evaluator 3.029 byte được giữ nguyên tại
-[clip4clip_metrics.py](../../outputs/w03/sources/clip4clip_metrics.py).
+[clip4clip_metrics.py](../../src/temporal_hoi/evaluation/reference/clip4clip_metrics.py.txt).
 SHA256: `103e93090de14f55d1db61e40ecf1fbc814670975bd9b9ab1fe341d0c95f0a6f`.
 Script từ chối chạy nếu byte mã nguồn không khớp hash; kiểm thử có ca xác minh
 việc từ chối này. Mã nguồn tải chỉ là evaluator nhỏ, không chứa weights/video.

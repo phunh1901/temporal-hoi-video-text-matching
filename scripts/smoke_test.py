@@ -6,7 +6,7 @@ This script:
 3. Computes the video representation via mean-pooling and L2 normalization (checking for non-zero norm).
 4. Encodes 4 candidate sentences and computes cosine similarity scores.
 5. Verifies finite numerical outputs, measures latency, records hardware/library versions,
-   and saves structured outputs to outputs/w01/smoke_test.json.
+   and saves structured outputs to outputs/validation/environment/smoke_test.json.
 """
 
 from __future__ import annotations
@@ -116,7 +116,7 @@ def run_smoke_test(
     video_path: str = DEFAULT_VIDEO_PATH,
     model_name: str = DEFAULT_MODEL_NAME,
     pretrained: str = DEFAULT_PRETRAINED,
-    output_dir: str = "outputs/w01",
+    output_dir: str = "outputs/validation/environment",
 ) -> dict[str, Any]:
     """Execute the full smoke test pipeline."""
     t_start = time.perf_counter()
@@ -289,7 +289,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--pretrained", type=str, default=DEFAULT_PRETRAINED, help="Pretrained checkpoint"
     )
-    parser.add_argument("--output-dir", type=str, default="outputs/w01", help="Output directory")
+    parser.add_argument("--output-dir", type=str, default="outputs/validation/environment", help="Output directory")
     args = parser.parse_args()
 
     run_smoke_test(

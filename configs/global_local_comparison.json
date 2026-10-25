@@ -1,0 +1,19 @@
+{
+  "protocol_version": "global_union_pair/v1",
+  "scope": "development_only",
+  "control": "B0_global",
+  "treatment": "B1_person_object_union",
+  "fixed": ["encoder_sha256", "preprocess", "frame_indices", "head_checkpoint", "pooling", "seed", "cohort_hash", "query_pool_hash", "optimizer", "train_budget"],
+  "head_pairs": [["B0_frozen", "B1_frozen"], ["B0_H", "B1_H"]],
+  "forbidden_comparisons": [["B0_frozen", "B1_H"], ["B0_H", "B1_frozen"]],
+  "crop_coordinates": "original_frame_pixels_xyxy",
+  "union": "min(x1),min(y1),max(x2),max(y2); clip to image; inverse original-to-decoded resize",
+  "pair_selection": "max pair_score; tie person_track_id, object_track_id, object_class, then boxes",
+  "caption_conditioned_selection": false,
+  "full_frame_fallback": false,
+  "verified_full_frame_union": "accept genuine pair; log no_local_contrast count",
+  "missing_pair": "exclude under a shared locked cohort and report coverage; never substitute global frame",
+  "primary_metric": "validation text_to_video R@1",
+  "paired_reporting": ["both_direction R@1/5/10 and MedR", "latency", "resident_RAM", "commit", "CUDA_peak", "trainable_parameters"],
+  "current_status": "blocked_missing_verified_detector_boxes_and_benchmark_media"
+}

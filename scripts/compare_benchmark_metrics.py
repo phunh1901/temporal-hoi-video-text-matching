@@ -9,6 +9,7 @@ import hashlib
 import importlib.util
 import json
 from datetime import datetime, timezone
+from importlib.machinery import SourceFileLoader
 from pathlib import Path
 
 import numpy as np
@@ -19,7 +20,7 @@ from temporal_hoi.evaluation import compute_retrieval_metrics
 ROOT = Path(__file__).resolve().parents[1]
 COMMIT = "508ffa3de39ba0563a03199c440ab602a72e9b6f"
 SOURCE_SHA256 = "103e93090de14f55d1db61e40ecf1fbc814670975bd9b9ab1fe341d0c95f0a6f"
-SOURCE = ROOT / "outputs/w03/sources/clip4clip_metrics.py"
+SOURCE = ROOT / "src/temporal_hoi/evaluation/reference/clip4clip_metrics.py.txt"
 UPSTREAM_URL = f"https://github.com/ArrowLuo/CLIP4Clip/blob/{COMMIT}/metrics.py"
 
 
@@ -29,7 +30,8 @@ def load_official(source=SOURCE):
     actual_hash = hashlib.sha256(source.read_bytes()).hexdigest()
     if actual_hash != SOURCE_SHA256:
         raise ValueError(f"Pinned upstream evaluator hash mismatch: {actual_hash}")
-    spec = importlib.util.spec_from_file_location("w03_clip4clip_official", source)
+    loader = SourceFileLoader("w03_clip4clip_official", str(source))
+    spec = importlib.util.spec_from_loader(loader.name, loader)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -244,7 +246,7 @@ def build_report(source=SOURCE):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", type=Path, default=SOURCE)
-    parser.add_argument("--output", type=Path, default=ROOT / "outputs/w03/metric_conformance.json")
+    parser.add_argument("--output", type=Path, default=ROOT / "outputs/protocols/benchmark_locks/metric_conformance.json")
     args = parser.parse_args()
     report = build_report(args.source)
     args.output.parent.mkdir(parents=True, exist_ok=True)

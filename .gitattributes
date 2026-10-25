@@ -1,0 +1,4 @@
+# Preserve hash-pinned source snapshots across Windows and Unix checkouts.
+scripts/kaggle/msrvtt/*.py -text
+scripts/kaggle/msrvtt/vendor/* -text
+src/temporal_hoi/evaluation/reference/clip4clip_metrics.py.txt -text

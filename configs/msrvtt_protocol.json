@@ -4,8 +4,8 @@
   "checked_on": "2026-10-03",
   "dataset": "MSR-VTT",
   "protocol_name": "CLIP4Clip_MSRVTT_9k_train_1k_JSFusion_test",
-  "metadata_lock": "outputs/w03/msrvtt_protocol_lock.json",
-  "source_audit": "outputs/w03/m2_sources.json",
+  "metadata_lock": "data/metadata/msrvtt_protocol_lock.json",
+  "source_audit": "outputs/protocols/benchmark_locks/m2_sources.json",
   "official_split": {
     "train_video_count": 9000,
     "test_video_count": 1000,
