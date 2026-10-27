@@ -61,7 +61,7 @@ Khi dùng CLIP/detector pretrained, zero-shot chỉ phát biểu theo supervisio
 
 | Điều kiện | Trạng thái 03/10 | Việc cần làm |
 |---|---|---|
-| Repo commit, evaluator source, category bytes/hash | Đã xác minh | Giữ file nhỏ trong `outputs/w03/m1_upstream/` và provenance `m1_sources.json`. |
+| Repo commit, evaluator source, category bytes/hash | Đã xác minh | Giữ file nhỏ trong `outputs/protocols/benchmark_locks/m1_upstream/` và provenance `m1_sources.json`. |
 | Annotation/split mapping/ID hash | Chưa có | Lấy annotation + frame lists; đối chiếu mapping; không tải toàn video trước khi quyết định tài nguyên. |
 | Prediction oracle tác giả | Repo công bố; folder link mở được nhưng chưa xác minh listing/binary/hash | Xác minh tên, byte size, phép tải một prediction rồi hash; nếu không được ghi blocked cho evaluator run. |
 | Mask proposal/pose | Chưa có file/ID/hash | Chạy kiểm toán mask riêng trước mAP; báo mọi loại frame. |
