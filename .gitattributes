@@ -2,3 +2,8 @@
 scripts/kaggle/msrvtt/*.py -text
 scripts/kaggle/msrvtt/vendor/* -text
 src/temporal_hoi/evaluation/reference/clip4clip_metrics.py.txt -text
+
+# These captured files use CRLF; keep the normal whitespace checks and recognize CRLF.
+scripts/kaggle/msrvtt/retrieval_core.py whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+scripts/kaggle/msrvtt/test_core.py whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+scripts/kaggle/msrvtt/workflow.py whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

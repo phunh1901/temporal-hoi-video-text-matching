@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "temporal-hoi-video-text-matching"
 version = "0.1.0"
-description = "Research prototype for temporal human-object video-text matching and rule-based violation detection"
+description = "Research prototype for vision-language human-object interaction detection and video-text retrieval"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [

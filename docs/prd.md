@@ -1,8 +1,8 @@
-# PRD — Temporal HOI Video–Text Matching
+# PRD — Mô hình Thị giác – Ngôn ngữ trong Phát hiện Tương tác Người – Vật thể và Truy vấn Video – Văn bản
 
 **Người thực hiện:** Ngô Hoàng Phú
 **Phiên bản phạm vi:** 30/09/2026, đối soát theo yêu cầu hai module và hai giai đoạn nghiên cứu.
-**Vai trò:** Đặc tả yêu cầu và giao thức mục tiêu. [README](../README.md) mô tả khả năng hiện có; [Plan](../plan.md) phân bổ việc và bằng chứng. Yêu cầu trong PRD không có nghĩa đã triển khai.
+**Vai trò:** Đặc tả yêu cầu và giao thức mục tiêu. [README](../README.md) mô tả khả năng hiện có; [giao thức thực nghiệm](protocols/) mô tả điều kiện triển khai và đánh giá. Yêu cầu trong PRD không có nghĩa đã triển khai.
 
 ## 1. Mục tiêu và câu hỏi nghiên cứu
 
@@ -40,6 +40,33 @@ Chọn **VidHOI** để duy trì phạm vi HOI trong video. Không trộn Action
 
 [ST-HOI — Chiou et al., ACM ICMR Workshop 2021](https://github.com/coldmanck/VidHOI) là baseline lịch sử. Repository cho biết checkpoint cũ không còn được cung cấp, nhưng có dự đoán để kiểm tra evaluator. Vì vậy phải xác minh artifact trước khi cam kết chạy model; chấm lại dự đoán không phải tái lập inference/huấn luyện. Evaluator có quy ước lọc frame và oracle/predicted tracks riêng; phải khóa chúng.
 
+Đường chuẩn bị riêng có [probe HOI tĩnh và gói Kaggle](protocols/vidhoi_static_probe.md):
+CLIP gốc đóng băng chấm vùng cặp với hộp/lớp vật thể chuẩn trên mẫu train được
+chỉ định. CLI xuất prediction và metric chẩn đoán theo evaluator hiện có.
+Đây là baseline tự xây ở mức probe oracle, không phải tái lập ST-HOI/ACoLP,
+benchmark toàn VidHOI hoặc bằng chứng đã đạt yêu cầu zero-shot dưới đây.
+
+[Đối chứng biểu diễn trên cùng probe](protocols/vidhoi_representation_diagnostic.md)
+giữ CLIP/prompt/cặp/evaluator và so toàn frame, crop vật thể, crop hợp người–vật.
+Các thứ hạng positive đã biết và đối xứng pixel/score bổ sung cách đọc mAP;
+chúng không là accuracy, bằng chứng hiểu vai trò hoặc thay giao thức benchmark.
+Đường này không học head, chọn biến thể thắng hoặc đánh giá retrieval M2.
+
+[Đường học head M1](protocols/vidhoi_head_development.md) dùng cache CLIP đóng
+băng và tách train/development theo video từ upstream train. Ba residual head
+object/union/fusion giữ cùng dung lượng/ngân sách, học positive-only cosine với
+feature anchor và báo đủ ba seed. Epoch 0 có thể được chọn nếu học không cải
+thiện development. AP theo nhóm seen, pseudo-unseen và dev-only lấy từ cùng
+evaluator sau chọn checkpoint, không tự trở thành kết quả zero-shot cuối.
+Phạm vi này chưa gồm detector predicted, temporal, benchmark đầy đủ hoặc đo
+lợi ích chuyển biểu diễn sang retrieval MSR-VTT.
+
+[Chẩn đoán theo cặp và review nhãn](protocols/vidhoi_pair_diagnostics.md) tái dùng
+cache/checkpoint đã khóa để truy vết xếp hạng giữa các cặp, budget và matching.
+Nhãn bổ sung có mask/provenance của người kiểm tra, không suy negative từ
+annotation thiếu và không thay ground truth benchmark. Đường này chỉ chấm
+checkpoint cố định, chưa triển khai pilot loss ranking hoặc cầu nối M1→M2.
+
 **Điều kiện W03 bắt buộc:** xác minh giao thức zero-shot được công bố trên VidHOI và một baseline hiện đại có mã/weights tương thích. ST-HOI không mặc nhiên đáp ứng điều kiện này. Nếu chưa tìm được:
 
 1. Ghi rõ phần tái lập zero-shot SOTA là **chưa đạt**, không thay bằng kết quả closed-set.
@@ -57,6 +84,21 @@ Chọn **MSR-VTT**, protocol 9k-train/1k-test của [CLIP4Clip](https://github.c
 Tên tham số val_csv trong ví dụ upstream có thể trỏ vào test; dự án không dùng test đó để chọn checkpoint. Để học head mới, giữ lại 10% video từ train làm validation bằng seed 42, lưu danh sách trước huấn luyện. Báo cáo đây là giao thức phát triển điều chỉnh. Nếu so với checkpoint dùng đầy đủ train, ghi rõ khác biệt; đối chứng nội bộ phải dùng cùng train/validation.
 
 Tập test/candidate pool chính thức giữ nguyên. Khóa cách dùng caption, khử bản sao, chiều truy vấn và xử lý nhiều positive. Dữ liệu caption tiếng Anh dùng cho benchmark; caption tiếng Việt dịch hoặc demo phải báo riêng. Caption sinh từ nhãn HOI là thí nghiệm bổ sung, không gọi là MSR-VTT.
+
+Baseline inference M2 được chọn hiện tại là CLIP4Clip native meanP với checkpoint
+bên thứ ba [jaewooo/test tại revision đã khóa](https://huggingface.co/jaewooo/test/tree/de15dc5686a8628d051dae0a85b80d34ed690c68),
+epoch4. Nguồn này không phải trọng số do nhóm tác giả paper phát hành. Giữ
+pipeline native và đối chiếu evaluator theo [giao thức inference](protocols/baseline_inference.md);
+không thay checkpoint bằng bản OpenMMLab. Đây là baseline lịch sử cho M2,
+không tự đáp ứng mục tiêu SOTA hiện đại, M1 hoặc ablation có kiểm soát.
+Checkpoint khai báo học train9k bao gồm validation900 nội bộ, nên validation900
+không dùng để tuyên bố chất lượng validation độc lập của checkpoint này.
+
+Nhánh đối chứng M2 từ frame features được đặc tả trong
+[giao thức B0/B1/B2](protocols/retrieval_pooling.md): B0 mean pooling,
+B1 query-weighted pooling và B2 kết hợp điểm. Ba bản giữ cùng encoder/pool;
+chạy từ media hoặc cache đã xác minh và đối chiếu baseline trước B1/B2.
+Nhánh này không thay đối chứng temporal × geometry hoặc global–union crop.
 
 ### 3.3. Pilot W02 và quyền dữ liệu
 
@@ -92,7 +134,12 @@ Mọi cải tiến phải được học chung trên split seen, không fit clas
 
 ### 5.2. M2: cấu hình adapter nhẹ dự kiến
 
-Cấu hình này là **đề xuất thử nghiệm**, chưa phải code/config đã chạy; không thay cấu hình tác giả khi báo reproduction.
+Cấu hình dưới đây là mốc thử nghiệm nội bộ, không thay cấu hình tác giả khi báo reproduction.
+Đường học từ feature đóng băng, head tuyến tính, loss multi-positive và checkpoint
+được triển khai trong `models/`, `training/` và `scripts/train_alignment.py`;
+giao thức cache/probe mô tả tại [alignment_training.md](protocols/alignment_training.md).
+Probe tổng hợp chỉ kiểm tra đường học. Huấn luyện và chất lượng MSR-VTT phải có
+media/cache train–validation đúng lock; chưa được suy ra từ probe.
 
 - Backbone: encoder ảnh/text cùng một checkpoint đã căn chỉnh; đóng băng backbone, precompute feature theo chunk nếu vừa dung lượng.
 - Video: mean pooling làm mốc; head tuyến tính làm mốc học; thử MLP chỉ sau khi mốc chạy được. D lấy theo encoder, không mặc định mọi model đều 512.
@@ -157,7 +204,9 @@ Pilot loader hiện cho dev/val/test/extension; chưa hỗ trợ split train. Nh
 
 Ranh giới code mục tiêu:
 - data: đọc/biến đổi/split/adapter; không chứa mạng học.
-- models và training: encoder/head/loss/optimizer/checkpoint, **chưa triển khai**.
+- models và training: head/loss/optimizer/checkpoint cho feature backbone đóng băng;
+  backbone không nằm trong optimizer. Cache kiểm tra hash và split trước học;
+  giao thức train benchmark vẫn cần dữ liệu thật.
 - inference: dự đoán và xếp hạng; application tùy chọn cho ROI/dwell.
 - evaluation: metric và adapter evaluator; không học head hoặc ra quyết định luật.
 
@@ -177,4 +226,4 @@ Ranh giới code mục tiêu:
 
 **Giai đoạn 2 bắt đầu** khi đã có bằng chứng giai đoạn 1 và ngân sách được xác định. Chọn một cơ chế mới từ lỗi quan sát, nêu giả thuyết, phép bác bỏ và tiêu chí đo. Đầu ra là code, đối chứng và bản thảo trung thực; tính mới, khả năng được nhận bài và xếp loại luận văn cần đánh giá bên ngoài.
 
-**W01/W02 cập nhật 30/09/2026:** đã hoàn thiện nội dung chuẩn bị/pilot, bảng khảo sát và sơ đồ hai module; bổ sung R@K/MRR/MedR hai chiều có kiểm thử. Báo cáo sẵn để nộp, chưa xác nhận bàn giao bên ngoài. Đây không phải hoàn thành toàn bộ PRD: adapter benchmark, evaluator HOI, reproduction và training vẫn theo các tuần tiếp theo trong Plan. Xem [kiểm chứng](../outputs/w02/completion_verification.json); log cũ được giữ riêng, không ghi lùi kết quả mới.
+**W01/W02 cập nhật 30/09/2026:** đã hoàn thiện nội dung chuẩn bị/pilot, bảng khảo sát và sơ đồ hai module; bổ sung R@K/MRR/MedR hai chiều có kiểm thử. Báo cáo sẵn để nộp, chưa xác nhận bàn giao bên ngoài. Đây không phải hoàn thành toàn bộ PRD: adapter benchmark, evaluator HOI, reproduction và training vẫn theo các tuần tiếp theo trong Plan. Xem [kiểm chứng](../outputs/experiments/pilot/data_review/completion_verification.json); log cũ được giữ riêng, không ghi lùi kết quả mới.

@@ -1,0 +1,209 @@
+{
+  "schema_version": "kaggle_research_source_provenance_v1",
+  "files": {
+    "b3_eval_runtime.py": {
+      "path": "b3_eval_runtime.py",
+      "sha256": "4d1fda8e64fbdeeacd01672cbb34f9ab20c61e6d89bd0978ae0184dad10d93c7",
+      "bytes": 37800
+    },
+    "b3_probe_runtime.py": {
+      "path": "b3_probe_runtime.py",
+      "sha256": "219f7dddb4aa08a338cb1e2e4c348e4fd55182eb69c4e59ea1da2a232cdd6785",
+      "bytes": 28233
+    },
+    "bpe_bootstrap.py": {
+      "path": "bpe_bootstrap.py",
+      "sha256": "fa3cbcb5ef0ed5200f736848b94ff9aeb5ed810e9fccfc8ce559b114f4222954",
+      "bytes": 3275
+    },
+    "data_pipeline.py": {
+      "path": "data_pipeline.py",
+      "sha256": "0d0f87116af9f69205a06eb652d5606f8bed08e5ec6b4cb51006861aa5c7e5bb",
+      "bytes": 28631
+    },
+    "fulltrain_runtime.py": {
+      "path": "fulltrain_runtime.py",
+      "sha256": "79adc749f79e14046defe31664bee9b3759ceaeb31c626a8a6e43ee98532c222",
+      "bytes": 30425
+    },
+    "resources.py": {
+      "path": "resources.py",
+      "sha256": "4ddfaa691281e0848c0699ce0ea8787c85976b3be5eb585f74ba55951a4abca4",
+      "bytes": 2490
+    },
+    "retrieval_core.py": {
+      "path": "retrieval_core.py",
+      "sha256": "94fd6527fa59cb7eae5c884444a02ff25eda753d399c821cddeddbfde6c2dd64",
+      "bytes": 37625
+    },
+    "test_core.py": {
+      "path": "test_core.py",
+      "sha256": "34feb8be3933865201877edf403d0c74aed0369d323e4ead0cb52b656b80b889",
+      "bytes": 17025
+    },
+    "test_pipeline.py": {
+      "path": "test_pipeline.py",
+      "sha256": "65040c34d5f9f1533e21f60dca312426602f41e1c6a9e7eccca5de3d8979773c",
+      "bytes": 15007
+    },
+    "vendor/LICENSE.CLIP4Clip": {
+      "path": "vendor/LICENSE.CLIP4Clip",
+      "sha256": "7b98bfc12b332914ac5b38d8675f4cca98a1c676cf28360a606f84b59f1b2e3f",
+      "bytes": 1065
+    },
+    "vendor/LICENSE.OpenAI-CLIP": {
+      "path": "vendor/LICENSE.OpenAI-CLIP",
+      "sha256": "893951b3bf94db8df1b13e05da5cdeb499400960e4d44a3962a8b33ed0b4f28e",
+      "bytes": 1063
+    },
+    "vendor/metrics.reference.py": {
+      "path": "vendor/metrics.reference.py.txt",
+      "sha256": "103e93090de14f55d1db61e40ecf1fbc814670975bd9b9ab1fe341d0c95f0a6f",
+      "bytes": 3029
+    },
+    "vendor/modeling.reference.py": {
+      "path": "vendor/modeling.reference.py.txt",
+      "sha256": "2bd870e24ee0ce9b0b5f036b1fac01adfdbb22bd392a2fe74b9c385473853e84",
+      "bytes": 23399
+    },
+    "vendor/module_clip.py": {
+      "path": "vendor/module_clip.py.txt",
+      "sha256": "6efe65dcc44503c75e33ca1c49d6c53e7441c3bc48ec707081fa55e2833c6a5b",
+      "bytes": 22772
+    },
+    "vendor/rawvideo_util.reference.py": {
+      "path": "vendor/rawvideo_util.reference.py.txt",
+      "sha256": "cb62541f12da740d9c1511519c9e4ae0785517413bd712ac32e7fe6776ba255a",
+      "bytes": 3715
+    },
+    "vendor/tokenization_clip.py": {
+      "path": "vendor/tokenization_clip.py.txt",
+      "sha256": "60af2eccd9d1208933213b57d24c9ac337ca4be935bc6550a7300b656a6f3bb5",
+      "bytes": 5120
+    },
+    "workflow.py": {
+      "path": "workflow.py",
+      "sha256": "9c57681138093fabe39157c57b8bfc9dc7fff2d71cea6aa4b0d8131d733a47f9",
+      "bytes": 29319
+    }
+  },
+  "stages": {
+    "pooling": {
+      "result_archive_name": "jaewooo_epoch4_fp32_attention_v2_results.zip",
+      "result_archive_sha256": "44ff9576c45ed5b0e8e92b04271da25764ba4b0b2f999496067d64bfd4bbd890",
+      "source_capture": "notebook_embedded_sources_cross_checked_with_B3_result_sources",
+      "original_source_sha256": {
+        "data_pipeline.py": "0d0f87116af9f69205a06eb652d5606f8bed08e5ec6b4cb51006861aa5c7e5bb",
+        "retrieval_core.py": "94fd6527fa59cb7eae5c884444a02ff25eda753d399c821cddeddbfde6c2dd64",
+        "workflow.py": "9c57681138093fabe39157c57b8bfc9dc7fff2d71cea6aa4b0d8131d733a47f9",
+        "resources.py": "4ddfaa691281e0848c0699ce0ea8787c85976b3be5eb585f74ba55951a4abca4",
+        "test_core.py": "34feb8be3933865201877edf403d0c74aed0369d323e4ead0cb52b656b80b889",
+        "test_pipeline.py": "65040c34d5f9f1533e21f60dca312426602f41e1c6a9e7eccca5de3d8979773c",
+        "vendor/bpe_simple_vocab_16e6.txt.gz": "924691ac288e54409236115652ad4aa250f48203de50a9e4722a6ecd48d6804a",
+        "vendor/LICENSE.CLIP4Clip": "7b98bfc12b332914ac5b38d8675f4cca98a1c676cf28360a606f84b59f1b2e3f",
+        "vendor/LICENSE.OpenAI-CLIP": "893951b3bf94db8df1b13e05da5cdeb499400960e4d44a3962a8b33ed0b4f28e",
+        "vendor/metrics.reference.py": "103e93090de14f55d1db61e40ecf1fbc814670975bd9b9ab1fe341d0c95f0a6f",
+        "vendor/modeling.reference.py": "2bd870e24ee0ce9b0b5f036b1fac01adfdbb22bd392a2fe74b9c385473853e84",
+        "vendor/module_clip.py": "6efe65dcc44503c75e33ca1c49d6c53e7441c3bc48ec707081fa55e2833c6a5b",
+        "vendor/rawvideo_util.reference.py": "cb62541f12da740d9c1511519c9e4ae0785517413bd712ac32e7fe6776ba255a",
+        "vendor/tokenization_clip.py": "60af2eccd9d1208933213b57d24c9ac337ca4be935bc6550a7300b656a6f3bb5"
+      },
+      "withheld_inputs": [
+        "vendor/bpe_simple_vocab_16e6.txt.gz"
+      ],
+      "run_train": false,
+      "public_notebook": "pooling_b0_b1_b2.ipynb",
+      "notebook_status": "adapted_source_only_not_an_executed_notebook",
+      "original_code_cell_sha256": [
+        "18ae7dcd0e736d677b801424750bb12c21300326fcc5f0981bd84abd9346fa41",
+        "821c4310c9f48bf18dfe31b0450fae21816e1a645b02ba064af4b2b87ee5391a",
+        "e05b13b0e439d6c062b13c6a4ee5a80ad7a0785dff2a2d9bf2edae03b4c14e7b",
+        "f4196515f24a945c279af0c045bd1026a1578477ac99c8b76df7c6d0878daf34",
+        "f072eb58897f51919a6c704fa43f6d3001a9deccd1fda83f0212a82325f43a80",
+        "744cfe6671d1c54c31d4e509bbbe38ab88d4317fa239998106943f0f846748c1",
+        "bd0594f6ab054bdb19a7617b4e20aa1bbecdd38ae73202663efaa0b496dda5f6",
+        "b6b13162fe7174f2e93ea3ac79930138ff4a84ab882bccd430e891d313e17d9d",
+        "905105a674f7ef91bac380f438803a84e9b323266d3fe305a10ca431fc1cc9f4",
+        "27a9fe5a4bf10526d6d5d8accbf704ea70bf97ac62cf46ca8dd8db39311f2537",
+        "7fd428f16993d1c96a7f4be44aba8de33e38839056af8739e0334764bf60b884"
+      ]
+    },
+    "training": {
+      "result_archive_name": "msrvtt_b3_train8100_results.zip",
+      "result_archive_sha256": "52b9167686590a8c8b31fe6db90ebbe1d9e12dc92b444298e34a7a866a22be99",
+      "source_capture": "runtime_sources_zip_inside_result_archive",
+      "original_source_sha256": {
+        "data_pipeline.py": "0d0f87116af9f69205a06eb652d5606f8bed08e5ec6b4cb51006861aa5c7e5bb",
+        "retrieval_core.py": "94fd6527fa59cb7eae5c884444a02ff25eda753d399c821cddeddbfde6c2dd64",
+        "workflow.py": "9c57681138093fabe39157c57b8bfc9dc7fff2d71cea6aa4b0d8131d733a47f9",
+        "resources.py": "4ddfaa691281e0848c0699ce0ea8787c85976b3be5eb585f74ba55951a4abca4",
+        "test_core.py": "34feb8be3933865201877edf403d0c74aed0369d323e4ead0cb52b656b80b889",
+        "test_pipeline.py": "65040c34d5f9f1533e21f60dca312426602f41e1c6a9e7eccca5de3d8979773c",
+        "vendor/LICENSE.CLIP4Clip": "7b98bfc12b332914ac5b38d8675f4cca98a1c676cf28360a606f84b59f1b2e3f",
+        "vendor/LICENSE.OpenAI-CLIP": "893951b3bf94db8df1b13e05da5cdeb499400960e4d44a3962a8b33ed0b4f28e",
+        "vendor/metrics.reference.py": "103e93090de14f55d1db61e40ecf1fbc814670975bd9b9ab1fe341d0c95f0a6f",
+        "vendor/modeling.reference.py": "2bd870e24ee0ce9b0b5f036b1fac01adfdbb22bd392a2fe74b9c385473853e84",
+        "vendor/module_clip.py": "6efe65dcc44503c75e33ca1c49d6c53e7441c3bc48ec707081fa55e2833c6a5b",
+        "vendor/rawvideo_util.reference.py": "cb62541f12da740d9c1511519c9e4ae0785517413bd712ac32e7fe6776ba255a",
+        "vendor/tokenization_clip.py": "60af2eccd9d1208933213b57d24c9ac337ca4be935bc6550a7300b656a6f3bb5",
+        "bpe_bootstrap.py": "fa3cbcb5ef0ed5200f736848b94ff9aeb5ed810e9fccfc8ce559b114f4222954",
+        "b3_probe_runtime.py": "219f7dddb4aa08a338cb1e2e4c348e4fd55182eb69c4e59ea1da2a232cdd6785",
+        "msrvtt_train8100_v2.manifest.json": "3198e4b39f5c2c526430b48b620470144ce325198e174fbe357f5d898d4aa502",
+        "fulltrain_runtime.py": "79adc749f79e14046defe31664bee9b3759ceaeb31c626a8a6e43ee98532c222"
+      },
+      "withheld_inputs": [
+        "msrvtt_train8100_v2.manifest.json"
+      ],
+      "run_train": true,
+      "public_notebook": "train_b3.ipynb",
+      "notebook_status": "adapted_source_only_not_an_executed_notebook",
+      "original_code_cell_sha256": [
+        "efb7bf2c2f2c761c4c6c6227714a24e1664777939b7b40021fe88f184eb1dbd0",
+        "b4f2a0dd4951ec14f41968eb28c5348b64355f94627b2033f3c0a164a851eac8",
+        "dafb03949176301cc62b47cca6c3e0c75e211289e7e57e68317b000bf2150e7d",
+        "450e7f60dedc57df1e95cae01226f59a1a4bb86189869d496c72ba34b2b7f174",
+        "adb4b834bf26e941d699baa0906266290390da6f7cefbcdc7ce0a4edf976b2f6",
+        "a903e29fd616c72327877a51e4d05239441c75ce470e14c90ecf4e044172cd74"
+      ]
+    },
+    "evaluation": {
+      "result_archive_name": "msrvtt_b3_test1k_results.zip",
+      "result_archive_sha256": "6a79990d82ff2735061ba4506705689cebe47ca26a4ade7914aa9261019b70ee",
+      "source_capture": "runtime_sources_zip_inside_result_archive",
+      "original_source_sha256": {
+        "b3_eval_runtime.py": "4d1fda8e64fbdeeacd01672cbb34f9ab20c61e6d89bd0978ae0184dad10d93c7",
+        "bpe_bootstrap.py": "fa3cbcb5ef0ed5200f736848b94ff9aeb5ed810e9fccfc8ce559b114f4222954",
+        "data_pipeline.py": "0d0f87116af9f69205a06eb652d5606f8bed08e5ec6b4cb51006861aa5c7e5bb",
+        "evaluation_input_manifest.json": "34b576adca8ea4079881a1fa4de455383bbbcf4261bee744cf551e4f370be77e",
+        "resources.py": "4ddfaa691281e0848c0699ce0ea8787c85976b3be5eb585f74ba55951a4abca4",
+        "retrieval_core.py": "94fd6527fa59cb7eae5c884444a02ff25eda753d399c821cddeddbfde6c2dd64",
+        "test_core.py": "34feb8be3933865201877edf403d0c74aed0369d323e4ead0cb52b656b80b889",
+        "test_pipeline.py": "65040c34d5f9f1533e21f60dca312426602f41e1c6a9e7eccca5de3d8979773c",
+        "vendor/LICENSE.CLIP4Clip": "7b98bfc12b332914ac5b38d8675f4cca98a1c676cf28360a606f84b59f1b2e3f",
+        "vendor/LICENSE.OpenAI-CLIP": "893951b3bf94db8df1b13e05da5cdeb499400960e4d44a3962a8b33ed0b4f28e",
+        "vendor/metrics.reference.py": "103e93090de14f55d1db61e40ecf1fbc814670975bd9b9ab1fe341d0c95f0a6f",
+        "vendor/modeling.reference.py": "2bd870e24ee0ce9b0b5f036b1fac01adfdbb22bd392a2fe74b9c385473853e84",
+        "vendor/module_clip.py": "6efe65dcc44503c75e33ca1c49d6c53e7441c3bc48ec707081fa55e2833c6a5b",
+        "vendor/rawvideo_util.reference.py": "cb62541f12da740d9c1511519c9e4ae0785517413bd712ac32e7fe6776ba255a",
+        "vendor/tokenization_clip.py": "60af2eccd9d1208933213b57d24c9ac337ca4be935bc6550a7300b656a6f3bb5",
+        "workflow.py": "9c57681138093fabe39157c57b8bfc9dc7fff2d71cea6aa4b0d8131d733a47f9"
+      },
+      "withheld_inputs": [
+        "evaluation_input_manifest.json"
+      ],
+      "run_train": false,
+      "public_notebook": "evaluate_b0_b1_b2_b3.ipynb",
+      "notebook_status": "adapted_source_only_not_an_executed_notebook",
+      "original_code_cell_sha256": [
+        "69323de492a6a5740d3ac949fa23bd34668b1ffb48b5c73ce0a2686d56e668fa",
+        "89b13c84603a99c5d42ade5d500047f2ff30963d4e54880cadefb2e38ff738ae",
+        "9a175cad74a8057398654a19235e5c138bb3beaf53dfe823361eefde313ee21a",
+        "5c912fd71efaeeca2c1f54bc320c339b2a26f799696d97336299afe517e95f21",
+        "51ffdcd05381dd5c4dc94e1695f84ef8168f0157ab86fc33245a68bde02e32a8",
+        "7b228c39720d565cb8b5e48fc932d28777884e2831f8dc4a5a6b7e2b1091d476"
+      ]
+    }
+  },
+  "notebooks": "public source adaptations; outputs, embedded payloads and private input manifests omitted",
+  "hashes_are": "source identity evidence, not proof of a model quality claim"
+}
